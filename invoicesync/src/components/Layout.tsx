@@ -1,9 +1,21 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { BarChart2, Users2, Cog, FileText, Settings2 } from "lucide-react";
+import { BarChart2, Users2, Cog, FileText, Settings2, Smartphone } from "lucide-react";
 
 const Layout = () => {
   const location = useLocation();
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   
   const navigation = [
     { name: "Dashboard", href: "/", icon: BarChart2 },
@@ -12,6 +24,33 @@ const Layout = () => {
     { name: "Invoices", href: "/invoices", icon: FileText },
     { name: "Settings", href: "/settings", icon: Settings2 },
   ];
+
+  if (isMobile) {
+    return (
+      <div className="dark min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="text-center space-y-6 max-w-md">
+          <div className="flex justify-center">
+            <Smartphone size={64} className="text-muted-foreground" />
+          </div>
+          <div className="space-y-4">
+            <h1 className="text-2xl font-medium text-foreground" style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}>
+              Site non disponible sur mobile
+            </h1>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              InvoiceSync n'est actuellement pas optimisé pour les appareils mobiles. 
+              Veuillez utiliser un ordinateur ou une tablette pour accéder à l'application.
+            </p>
+          </div>
+          <div className="pt-4">
+            <div className="w-full h-px bg-border"></div>
+            <p className="text-xs text-muted-foreground mt-4">
+              Merci de votre compréhension
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="dark min-h-screen bg-background flex">
@@ -58,7 +97,7 @@ const Layout = () => {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col">
-        <main className="flex-1  bg-background">
+        <main className="flex-1 bg-background">
           <Outlet />
         </main>
       </div>

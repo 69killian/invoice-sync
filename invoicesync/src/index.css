@@ -172,6 +172,7 @@ body {
 .w-32 { width: 8rem; }
 .w-48 { width: 12rem; }
 .w-64 { width: 16rem; }
+.w-80 { width: 40rem; }
 
 .h-full { height: 100%; }
 .h-screen { height: 100vh; }
@@ -525,4 +526,79 @@ table th {
 @media (min-width: 1024px) {
   .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .lg\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* Dropdown Animation */
+@keyframes fadeInDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-dropdown {
+  animation: fadeInDown 0.2s ease-out;
+}
+
+/* Sliding Panel Animation */
+@keyframes slideIn {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slideIn {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Backdrop Blur Fade-in Animation */
+@keyframes fadeInBlur {
+  0% {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+}
+
+.animate-fadeInBlur {
+  animation: fadeInBlur 0.3s ease-out;
+}
+
+/* Custom scrollbar for modal */
+.modal-scroll {
+  overflow-y: scroll;
+  scrollbar-width: thin;
+  scrollbar-color: #666 #333;
+}
+
+.modal-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-scroll::-webkit-scrollbar-track {
+  background: #333;
+  border-radius: 4px;
+}
+
+.modal-scroll::-webkit-scrollbar-thumb {
+  background: #666;
+  border-radius: 4px;
+}
+
+.modal-scroll::-webkit-scrollbar-thumb:hover {
+  background: #888;
 }
