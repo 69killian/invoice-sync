@@ -33,9 +33,9 @@ const ClientsPage = () => {
   return (
     <div className="">
       {/* Header */}
-      <div className="">
-        <div className="flex items-center justify-between px-6">
-          <p className="font-normal text-sm py-3" style={{color: 'white'}}>
+      <div className="px-8">
+        <div className="flex items-center justify-between px-8">
+          <p className="font-normal text-sm py-3" style={{color: 'white', fontFamily: 'Bricolage Grotesque, sans-serif'}}>
             Clients
           </p>
           <Link 
@@ -124,19 +124,19 @@ const ClientsPage = () => {
 
         {/* Footer */}
         <div className="flex items-center justify-between px-2 text-sm text-foreground bg-background">
-          <div>
+          <div style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}>
             0 of 68 row(s) selected.
           </div>
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
-              <span>Rows per page</span>
+              <span style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}>Rows per page</span>
               <select className="bg-muted/5 hover:bg-muted border border-border font-thin rounded-none px-3 py-1 text-foreground min-w-16">
                 <option>10</option>
                 <option>20</option>
                 <option>50</option>
               </select>
             </div>
-            <div>Page 1 of 7</div>
+            <div style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}>Page 1 of 7</div>
             <div className="flex items-center gap-1">
               <button className="p-2 bg-muted/5 hover:bg-muted border border-border rounded-none disabled:opacity-50 w-8 h-8 flex items-center justify-center" disabled>
                 <ChevronsLeft size={14} />

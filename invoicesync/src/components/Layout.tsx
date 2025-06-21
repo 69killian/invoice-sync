@@ -1,56 +1,56 @@
 import React from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { BarChart3, Users, Settings, FileText, Wrench } from "lucide-react";
+import { BarChart2, Users2, Cog, FileText, Settings2 } from "lucide-react";
 
 const Layout = () => {
   const location = useLocation();
   
   const navigation = [
-    { name: "Dashboard", href: "/", icon: BarChart3 },
-    { name: "Clients", href: "/clients", icon: Users },
-    { name: "Services", href: "/services", icon: Settings },
+    { name: "Dashboard", href: "/", icon: BarChart2 },
+    { name: "Clients", href: "/clients", icon: Users2 },
+    { name: "Services", href: "/services", icon: Cog },
     { name: "Invoices", href: "/invoices", icon: FileText },
-    { name: "Settings", href: "/settings", icon: Wrench },
+    { name: "Settings", href: "/settings", icon: Settings2 },
   ];
 
   return (
     <div className="dark min-h-screen bg-background flex">
       {/* Sidebar */}
-      <div className="sidebar w-64 flex-shrink-0 relative border-r border-sidebar-border">
+      <div className="w-16 flex-shrink-0 relative  bg-background">
         {/* Sidebar Header */}
-        <div className="">
-          <p className="font-normal text-sm py-3 px-6" style={{color: 'white'}}>
-            InvoiceSync
-          </p>
-          <div className="border-b border-gray-700 mb-4"></div>
+        <div className="flex justify-center py-4">
+          <div className="w-8 h-8 flex items-center justify-center">
+            <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
+              <div className="w-4 h-4 bg-black rounded-full"></div>
+            </div>
+          </div>
         </div>
         
-        <div className="p-6">
-          <nav className="sidebar-nav">
+        <div className="px-2">
+          <nav className="space-y-2">
             {navigation.map((item) => {
               const IconComponent = item.icon;
+              const isActive = location.pathname === item.href || (item.href !== "/" && location.pathname.startsWith(item.href));
               return (
                 <Link
                   key={item.name}
                   to={item.href}
-                  className="sidebar-nav-item"
+                  className={`flex items-center justify-center p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-none transition-colors ${
+                    isActive ? 'bg-muted text-foreground' : ''
+                  }`}
+                  style={isActive ? {border: '1px solid #374151'} : {}}
                 >
-                  <IconComponent size={16} />
-                  <span>{item.name}</span>
+                  <IconComponent size={25} />
                 </Link>
               );
             })}
           </nav>
         </div>
         
-        <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-sidebar-border">
-          <div className="flex items-center gap-3">
+        <div className="absolute bottom-0 left-0 right-0 p-2">
+          <div className="flex justify-center">
             <div className="w-8 h-8 bg-muted rounded-none flex items-center justify-center">
-              <span className="text-xs font-normal">JD</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-normal truncate">John Doe</div>
-              <div className="text-xs text-muted-foreground truncate">john@example.com</div>
+              <span className="text-xs font-normal">AC</span>
             </div>
           </div>
         </div>
@@ -58,7 +58,7 @@ const Layout = () => {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col">
-        <main className="flex-1 px-0  bg-background">
+        <main className="flex-1  bg-background">
           <Outlet />
         </main>
       </div>
