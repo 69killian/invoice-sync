@@ -57,12 +57,14 @@ const Layout = () => {
       {/* Sidebar */}
       <div className="w-16 flex-shrink-0 relative  bg-background">
         {/* Sidebar Header */}
-        <div className="flex justify-center py-4">
-          <div className="w-8 h-8 flex items-center justify-center">
-            <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
-              <div className="w-4 h-4 bg-black rounded-full"></div>
-            </div>
-          </div>
+        <div className="flex justify-center py-3">
+          <Link to="/" className="w-6 h-6 mb-8 flex items-center justify-center hover:opacity-80 transition-opacity">
+            <img 
+              src="/logosync.png" 
+              alt="InvoiceSync Logo" 
+              className="w-12 h-12 object-contain"
+            />
+          </Link>
         </div>
         
         <div className="px-2">
