@@ -602,3 +602,17 @@ table th {
 .modal-scroll::-webkit-scrollbar-thumb:hover {
   background: #888;
 }
+
+/* Loading spinner animation */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

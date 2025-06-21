@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
+import LoadingSpinner from "./components/LoadingSpinner";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
-import DashboardPage from "./pages/DashboardPage";
 import ClientsPage from "./pages/ClientsPage";
 import ClientFormPage from "./pages/ClientFormPage";
 import ClientDetailPage from "./pages/ClientDetailPage";
@@ -16,6 +16,9 @@ import InvoiceDetailPage from "./pages/InvoiceDetailPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import SettingsPage from "./pages/SettingsPage";
 
+// Lazy load Dashboard page
+const DashboardPage = React.lazy(() => import("./pages/DashboardPage"));
+
 function App() {
   return (
     <Router>
@@ -23,7 +26,11 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/" element={<Layout />}>
-          <Route index element={<DashboardPage />} />
+          <Route index element={
+            <Suspense fallback={<LoadingSpinner />}>
+              <DashboardPage />
+            </Suspense>
+          } />
           <Route path="clients" element={<ClientsPage />} />
           <Route path="clients/new" element={<ClientFormPage />} />
           <Route path="clients/:id/edit" element={<ClientFormPage edit />} />
