@@ -21,6 +21,20 @@ import {
   TableCell,
   TableContainer,
 } from "../../../components/ui/table";
+import {
+  DeleteModal,
+  DeleteModalOverlay,
+  DeleteModalContent,
+  DeleteModalHeader,
+  DeleteModalTitle,
+  DeleteModalCloseButton,
+  DeleteModalBody,
+  DeleteModalIcon,
+  DeleteModalDescription,
+  DeleteModalFooter,
+  DeleteModalCancelButton,
+  DeleteModalConfirmButton,
+} from "../../../components/ui/delete-modal"
 
 // Custom hook for pagination
 const usePagination = (initialItemsPerPage = 10) => {
@@ -590,61 +604,21 @@ const ClientView = () => {
       {/* Delete Confirmation Modal */}
       {showDeleteModal && clientToDelete && (
         <>
-          {/* Dark Overlay */}
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-40 animate-fadeInBlur"
-            onClick={closeDeleteModal}
-            style={{
-              position: 'fixed', 
-              top: 0, 
-              left: 0, 
-              right: 0, 
-              bottom: 0, 
-              zIndex: 10001,
-              backdropFilter: 'blur(4px)',
-              WebkitBackdropFilter: 'blur(4px)',
-              transition: 'backdrop-filter 0.3s ease-out, opacity 0.3s ease-out'
-            }}
-          ></div>
-          
-          {/* Modal */}
-          <div 
-            className="fixed inset-0 flex items-center justify-center fadeInBlur"
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: 10002,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            <div 
-              className="w-96 bg-card border border-border shadow-xl rounded-none"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-6 border-b border-border">
+          <DeleteModalOverlay onClick={closeDeleteModal} />
+          <DeleteModal>
+            <DeleteModalContent>
+              <DeleteModalHeader>
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-medium" style={{color: 'white', fontFamily: 'Bricolage Grotesque, sans-serif'}}>
+                  <DeleteModalTitle>
                     Confirmer la suppression
-                  </h2>
-                  <button 
-                    onClick={closeDeleteModal}
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <X size={16} />
-                  </button>
+                  </DeleteModalTitle>
+                  <DeleteModalCloseButton onClick={closeDeleteModal} />
                 </div>
-              </div>
+              </DeleteModalHeader>
 
-              <div className="p-6 space-y-4">
+              <DeleteModalBody>
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-red-100 rounded-none flex items-center justify-center">
-                    <Trash2 size={24} className="text-red-600" />
-                  </div>
+                  <DeleteModalIcon />
                   <div>
                     <h3 className="text-sm font-medium text-foreground">
                       Supprimer le client
@@ -655,44 +629,26 @@ const ClientView = () => {
                   </div>
                 </div>
 
-                <div className="bg-muted/20 p-4 rounded-none">
+                <DeleteModalDescription>
                   <p className="text-sm text-foreground">
                     Êtes-vous sûr de vouloir supprimer le client <strong>"{clientToDelete.name}"</strong> ?
                   </p>
                   <p className="text-xs text-muted-foreground mt-2">
                     Ce client sera définitivement supprimé ainsi que tous ses projets et données associées.
                   </p>
-                </div>
+                </DeleteModalDescription>
 
-                <div className="flex gap-3 pt-4">
-                  <button 
-                    onClick={closeDeleteModal}
-                    className="flex-1 px-4 py-2 text-xs rounded-none transition-colors border"
-                    style={{
-                      backgroundColor: 'transparent',
-                      color: 'white',
-                      fontFamily: 'Bricolage Grotesque, sans-serif',
-                      border: '1px solid #374151'
-                    }}
-                  >
+                <DeleteModalFooter>
+                  <DeleteModalCancelButton onClick={closeDeleteModal}>
                     Annuler
-                  </button>
-                  <button 
-                    onClick={confirmDelete}
-                    className="flex-1 px-4 py-2 text-xs rounded-none transition-colors border"
-                    style={{
-                      backgroundColor: '#ef4444',
-                      color: 'white',
-                      fontFamily: 'Bricolage Grotesque, sans-serif',
-                      border: '1px solid #ef4444'
-                    }}
-                  >
+                  </DeleteModalCancelButton>
+                  <DeleteModalConfirmButton onClick={confirmDelete}>
                     Supprimer définitivement
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+                  </DeleteModalConfirmButton>
+                </DeleteModalFooter>
+              </DeleteModalBody>
+            </DeleteModalContent>
+          </DeleteModal>
         </>
       )}
     </div>
