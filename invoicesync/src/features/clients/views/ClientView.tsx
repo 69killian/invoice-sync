@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { X, ChevronDown } from "lucide-react";
 import ClientsHeader from "../components/ClientsHeader";
 import ClientsTopClients from "../components/ClientsTopClients";
