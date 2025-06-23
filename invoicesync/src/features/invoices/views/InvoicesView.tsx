@@ -1,48 +1,10 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { MoreHorizontal, GripVertical, Plus, Eye, Edit, X, ChevronDown, Trash2 } from "lucide-react";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationPrevious,
-  PaginationNext,
-  PaginationFirst,
-  PaginationLast,
-  PaginationRowsPerPage,
-  PaginationText,
-} from "../../../components/ui/pagination";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-  TableContainer,
-} from "../../../components/ui/table";
-import {
-  StatCard,
-  StatCardHeader,
-  StatCardTitle,
-  StatCardBadge,
-  StatCardValue,
-  StatCardDescription,
-} from "../../../components/ui/stat-card"
-import {
-  DeleteModal,
-  DeleteModalOverlay,
-  DeleteModalContent,
-  DeleteModalHeader,
-  DeleteModalTitle,
-  DeleteModalCloseButton,
-  DeleteModalBody,
-  DeleteModalIcon,
-  DeleteModalDescription,
-  DeleteModalFooter,
-  DeleteModalCancelButton,
-  DeleteModalConfirmButton,
-} from "../../../components/ui/delete-modal"
+import { X, ChevronDown } from "lucide-react";
+import StatCards from "../components/StatCards"
+import InvoicesHeader from "../components/InvoicesHeader"
+import InvoicesSearchFilters from "../components/InvoicesSearchFilters"
+import InvoicesTable from "../components/InvoicesTable"
+import InvoiceDeleteModal from "../components/InvoiceDeleteModal"
 
 const InvoiceView = () => {
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
@@ -231,207 +193,34 @@ const InvoiceView = () => {
       {/* Main Content */}
       <div className="">
         {/* Header */}
-        <div className="px-8">
-          <div className="flex items-center justify-between px-8">
-            <p className="font-normal text-sm py-3" style={{color: 'white', fontFamily: 'Bricolage Grotesque, sans-serif'}}>
-              Factures
-            </p>
-            <button 
-              onClick={openCreatePanel}
-              className="text-xs px-3 py-1 flex items-center gap-2 text-muted-foreground bg-card hover:bg-muted hover:text-foreground transition-colors" 
-              style={{border: '1px solid #374151', fontFamily: 'Roboto Mono, monospace', fontWeight: 400, textDecoration: 'none'}}
-            >
-              <Plus size={14} />
-              Nouvelle facture
-            </button>
-          </div>
-          <div className="border-b border-gray-700 mb-4"></div>
-        </div>
+        <InvoicesHeader onCreateClick={openCreatePanel} />
 
         {/* Statistics Cards */}
-        <div className="px-8 mb-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            <StatCard>
-              <StatCardHeader>
-                <StatCardTitle>Total Factures</StatCardTitle>
-                <StatCardBadge trend="up">+8.2%</StatCardBadge>
-              </StatCardHeader>
-              <StatCardValue>156</StatCardValue>
-              <StatCardDescription>+12 ce mois-ci</StatCardDescription>
-            </StatCard>
-            
-            <StatCard>
-              <StatCardHeader>
-                <StatCardTitle>Chiffre d'Affaires</StatCardTitle>
-                <StatCardBadge trend="up">+15.3%</StatCardBadge>
-              </StatCardHeader>
-              <StatCardValue>€47,250</StatCardValue>
-              <StatCardDescription>+€6,800 ce mois-ci</StatCardDescription>
-            </StatCard>
-          </div>
-        </div>
+        <StatCards />
 
         {/* Search and Filters */}
-        <div className="px-8 mb-4">
-          <div className="flex gap-4">
-            <select className="bg-background border border-border text-xs px-3 py-2 rounded-none text-foreground">
-          <option>Statut</option>
-          <option>Payé</option>
-          <option>En attente</option>
-        </select>
-            <input 
-              type="date" 
-              className="bg-background border border-border text-xs px-3 py-2 rounded-none text-foreground"
-            />
-            <input 
-              type="text" 
-              placeholder="Client..." 
-              className="bg-background border border-border text-xs px-3 py-2 rounded-none text-foreground w-64"
-            />
-          </div>
-      </div>
+        <InvoicesSearchFilters />
 
         <div className="space-y-6 py-4 px-8">
-          {/* Table */}
-          <TableContainer>
-            <Table style={{ border: 'none', borderCollapse: 'collapse' }}>
-              <TableHeader>
-                <TableRow className="border-b border-border bg-muted/20">
-                  <TableHead className="w-12" style={{ border: 'none' }}>
-                    <input type="checkbox" />
-                  </TableHead>
-                  <TableHead style={{ border: 'none' }}>N°</TableHead>
-                  <TableHead style={{ border: 'none' }}>Client</TableHead>
-                  <TableHead style={{ border: 'none' }}>Date</TableHead>
-                  <TableHead style={{ border: 'none' }}>Montant</TableHead>
-                  <TableHead style={{ border: 'none' }}>Statut</TableHead>
-                  <TableHead className="w-12" style={{ border: 'none' }}></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {invoices.map((invoice) => (
-                  <TableRow
-                    key={invoice.id}
-                    style={{
-                      backgroundColor: hoveredRow === invoice.id ? 'rgba(0, 0, 0, 0.1)' : 'var(--background)'
-                    }}
-                    onMouseEnter={() => setHoveredRow(invoice.id)}
-                    onMouseLeave={() => setHoveredRow(null)}
-                  >
-                    <TableCell>
-                      <input type="checkbox" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <GripVertical size={16} className="text-muted-foreground" />
-                        <span className="text-sm font-nomal text-foreground">{invoice.number}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm font-thin text-foreground">{invoice.client}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm font-thin text-foreground">{invoice.date}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm font-thin text-foreground">{invoice.amount}</span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {invoice.status === "Payé" ? (
-                          <>
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                            <span className="text-xs font-thin border px-2 text-foreground">Payé</span>
-                          </>
-                        ) : (
-                          <>
-                            <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                            <span className="text-xs font-thin border px-2 text-foreground">En attente</span>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="relative">
-                        <button 
-                          className="text-muted-foreground hover:text-foreground rounded-none border border-border flex items-center justify-center"
-                          onClick={() => toggleDropdown(invoice.id)}
-                        >
-                          <MoreHorizontal size={16} />
-                        </button>
-                        {openDropdown === invoice.id && (
-                          <div className="absolute right-0 bottom-8 w-32 bg-card border border-border rounded-none shadow-lg z-[10000] fadeInDown" style={{zIndex: 10000}}>
-                            <button
-                              onClick={() => openInvoicePanel(invoice)}
-                              className="w-full px-3 py-2 text-xs text-left hover:bg-muted flex items-center gap-2"
-                            >
-                              <Eye size={12} />
-                              Voir
-                            </button>
-                            <button 
-                              onClick={() => openInvoicePanelInEditMode(invoice)}
-                              className="w-full px-3 py-2 text-xs text-left hover:bg-muted flex items-center gap-2"
-                            >
-                              <Edit size={12} />
-                              Éditer
-                            </button>
-                            <button 
-                              onClick={() => openDeleteModal(invoice)}
-                              className="w-full px-3 py-2 text-xs text-left hover:bg-muted flex items-center gap-2 text-red-500 hover:text-red-400"
-                            >
-                              <Trash2 size={12} />
-                              Supprimer
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-           {/* Pagination */}
-      <Pagination>
-        <PaginationText>
-          {selectedRows.length} of {invoices.length} invoice(s) selected.
-        </PaginationText>
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationText>Rows per page</PaginationText>
-            <PaginationRowsPerPage
-              value={itemsPerPage}
-              onChange={(e) => setItemsPerPage(Number(e.target.value))}
-            />
-          </PaginationItem>
-          <PaginationText>
-            Page {currentPage} of {totalPages}
-          </PaginationText>
-          <PaginationItem>
-            <PaginationFirst
-              onClick={() => setCurrentPage(1)}
-              isDisabled={currentPage === 1}
-            />
-            <PaginationPrevious
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-              isDisabled={currentPage === 1}
-            />
-            <PaginationNext
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-              isDisabled={currentPage === totalPages}
-            />
-            <PaginationLast
-              onClick={() => setCurrentPage(totalPages)}
-              isDisabled={currentPage === totalPages}
-            />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
+          <InvoicesTable
+            invoices={invoices}
+            selectedRows={selectedRows}
+            hoveredRow={hoveredRow}
+            openDropdown={openDropdown}
+            itemsPerPage={itemsPerPage}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onToggleRowSelection={toggleRowSelection}
+            onToggleAllRows={toggleAllRows}
+            onToggleDropdown={toggleDropdown}
+            onOpenPanelView={openInvoicePanel}
+            onOpenPanelEdit={openInvoicePanelInEditMode}
+            onOpenDeleteModal={openDeleteModal}
+            onSetItemsPerPage={setItemsPerPage}
+            onSetCurrentPage={setCurrentPage}
+          />
         </div>
       </div>
-
-     
 
       {/* Invoice Detail Modal */}
       {(selectedInvoice || isCreating) && (
@@ -754,56 +543,12 @@ const InvoiceView = () => {
         </>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && invoiceToDelete && (
-        <>
-          <DeleteModalOverlay onClick={closeDeleteModal} />
-          <DeleteModal>
-            <DeleteModalContent>
-              <DeleteModalHeader>
-                <div className="flex items-center justify-between">
-                  <DeleteModalTitle>
-                    Confirmer la suppression
-                  </DeleteModalTitle>
-                  <DeleteModalCloseButton onClick={closeDeleteModal} />
-                </div>
-              </DeleteModalHeader>
-
-              <DeleteModalBody>
-                <div className="flex items-center gap-3">
-                  <DeleteModalIcon />
-                  <div>
-                    <h3 className="text-sm font-medium text-foreground">
-                      Supprimer la facture
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Cette action est irréversible
-                    </p>
-                  </div>
-                </div>
-
-                <DeleteModalDescription>
-                  <p className="text-sm text-foreground">
-                    Êtes-vous sûr de vouloir supprimer la facture <strong>"{invoiceToDelete.number}"</strong> ?
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Cette facture sera définitivement supprimée ainsi que toutes ses données associées.
-                  </p>
-                </DeleteModalDescription>
-
-                <DeleteModalFooter>
-                  <DeleteModalCancelButton onClick={closeDeleteModal}>
-                    Annuler
-                  </DeleteModalCancelButton>
-                  <DeleteModalConfirmButton onClick={confirmDelete}>
-                    Supprimer définitivement
-                  </DeleteModalConfirmButton>
-                </DeleteModalFooter>
-              </DeleteModalBody>
-            </DeleteModalContent>
-          </DeleteModal>
-        </>
-      )}
+      <InvoiceDeleteModal
+        open={showDeleteModal && Boolean(invoiceToDelete)}
+        invoice={invoiceToDelete}
+        onClose={closeDeleteModal}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 };
