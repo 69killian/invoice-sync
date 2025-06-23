@@ -1,41 +1,9 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { MoreHorizontal, GripVertical, Plus, Eye, Edit, X, ChevronDown, Trash2 } from "lucide-react";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationPrevious,
-  PaginationNext,
-  PaginationFirst,
-  PaginationLast,
-  PaginationRowsPerPage,
-  PaginationText,
-} from "../../../components/ui/pagination";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-  TableContainer,
-} from "../../../components/ui/table";
-import {
-  DeleteModal,
-  DeleteModalOverlay,
-  DeleteModalContent,
-  DeleteModalHeader,
-  DeleteModalTitle,
-  DeleteModalCloseButton,
-  DeleteModalBody,
-  DeleteModalIcon,
-  DeleteModalDescription,
-  DeleteModalFooter,
-  DeleteModalCancelButton,
-  DeleteModalConfirmButton,
-} from "../../../components/ui/delete-modal"
-import { TopClientsCard, TopClientsCardHeader, TopClientItem } from "../../../components/ui/top-clients-card"
+import { X, ChevronDown } from "lucide-react";
+import ClientsHeader from "../components/ClientsHeader";
+import ClientsTopClients from "../components/ClientsTopClients";
+import ClientsTable from "../components/ClientsTable";
+import ClientDeleteModal from "../components/ClientDeleteModal";
 
 // Custom hook for pagination
 const usePagination = (initialItemsPerPage = 10) => {
@@ -226,185 +194,31 @@ const ClientView = () => {
   return (
     <div className="">
       {/* Header */}
-      <div className="px-8">
-        <div className="flex items-center justify-between px-8">
-          <p className="font-normal text-sm py-3" style={{color: 'white', fontFamily: 'Bricolage Grotesque, sans-serif'}}>
-            Clients
-          </p>
-          <button 
-            onClick={openCreatePanel}
-            className="text-xs px-3 py-1 flex items-center gap-2 text-muted-foreground bg-card hover:bg-muted hover:text-foreground transition-colors" 
-            style={{border: '1px solid #374151', fontFamily: 'Roboto Mono, monospace', fontWeight: 400, textDecoration: 'none'}}
-          >
-            <Plus size={14} />
-            Ajouter un client
-          </button>
-        </div>
-        <div className="border-b border-gray-700 mb-4"></div>
-      </div>
+      <ClientsHeader onCreateClick={openCreatePanel} />
 
       {/* Top Clients Card */}
       <div className="px-8 mb-6">
-        <TopClientsCard>
-          <TopClientsCardHeader>Top Clients</TopClientsCardHeader>
-          {clients
-            .slice()
-            .sort((a, b) => {
-              const revA = parseFloat(a.revenue.replace(/[^\d.-]/g, '').replace(',', '.')) || 0;
-              const revB = parseFloat(b.revenue.replace(/[^\d.-]/g, '').replace(',', '.')) || 0;
-              return revB - revA;
-            })
-            .slice(0, 3)
-            .map((client, index) => (
-              <TopClientItem
-                key={client.id}
-                colorClass={`bg-chart-${index + 1}`}
-                initials={client.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                name={client.name}
-                email={client.email}
-                revenue={client.revenue}
-              />
-            ))}
-        </TopClientsCard>
+        <ClientsTopClients clients={clients} />
       </div>
 
       <div className="space-y-6 py-4 px-8">
-        {/* Table */}
-        <TableContainer>
-          <Table style={{ border: 'none', borderCollapse: 'collapse' }}>
-            <TableHeader>
-              <TableRow className="border-b border-border bg-muted/20">
-                <TableHead className="w-12" style={{ border: 'none' }}>
-                  <input type="checkbox" />
-                </TableHead>
-                <TableHead style={{ border: 'none' }}>Nom</TableHead>
-                <TableHead style={{ border: 'none' }}>Email</TableHead>
-                <TableHead style={{ border: 'none' }}>Téléphone</TableHead>
-                <TableHead style={{ border: 'none' }}>Status</TableHead>
-                <TableHead style={{ border: 'none' }}>Projets</TableHead>
-                <TableHead style={{ border: 'none' }}>Chiffre d'affaires</TableHead>
-                <TableHead className="w-12" style={{ border: 'none' }}></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedClients.map((client) => (
-                <TableRow
-                  key={client.id}
-                  style={{
-                    backgroundColor: hoveredRow === client.id ? 'rgba(0, 0, 0, 0.1)' : 'var(--background)'
-                  }}
-                  onMouseEnter={() => setHoveredRow(client.id)}
-                  onMouseLeave={() => setHoveredRow(null)}
-                >
-                  <TableCell>
-                    <input type="checkbox" />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <GripVertical size={16} className="text-muted-foreground" />
-                      <span className="text-sm font-nomal text-foreground">{client.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm font-thin text-foreground">{client.email}</span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm font-thin text-foreground">{client.phone}</span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {client.status === "Active" ? (
-                        <>
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          <span className="text-xs font-thin border px-2 text-foreground">Active</span>
-                        </>
-                      ) : (
-                        <>
-                          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                          <span className="text-sm font-thin text-foreground">Inactive</span>
-                        </>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm font-thin text-foreground">{client.projects}</TableCell>
-                  <TableCell className="text-sm font-thin text-foreground">{client.revenue}</TableCell>
-                  <TableCell>
-                    <div className="relative">
-                      <button 
-                        className="text-muted-foreground hover:text-foreground rounded-none border border-border flex items-center justify-center"
-                        onClick={() => toggleDropdown(client.id)}
-                      >
-                        <MoreHorizontal size={16} />
-                      </button>
-                      {openDropdown === client.id && (
-                        <div className="absolute right-0 top-8 w-32 bg-card border border-border rounded-none shadow-lg z-[10000] fadeInDown" style={{zIndex: 10000}}>
-                          <button
-                            onClick={() => openClientPanel(client)}
-                            className="w-full px-3 py-2 text-xs text-left hover:bg-muted flex items-center gap-2"
-                          >
-                            <Eye size={12} />
-                            Voir
-                          </button>
-                          <button 
-                            onClick={() => openClientPanelInEditMode(client)}
-                            className="w-full px-3 py-2 text-xs text-left hover:bg-muted flex items-center gap-2"
-                          >
-                            <Edit size={12} />
-                            Éditer
-                          </button>
-                          <button 
-                            onClick={() => openDeleteModal(client)}
-                            className="w-full px-3 py-2 text-xs text-left hover:bg-muted flex items-center gap-2 text-red-500 hover:text-red-400"
-                          >
-                            <Trash2 size={12} />
-                            Supprimer
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-
-        {/* Pagination */}
-        <Pagination>
-          <PaginationText>
-            {selectedRows.length} of {clients.length} client(s) selected.
-          </PaginationText>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationText>Rows per page</PaginationText>
-              <PaginationRowsPerPage
-                value={pagination.itemsPerPage}
-                onChange={(e) => pagination.setItemsPerPage(Number(e.target.value))}
-              />
-            </PaginationItem>
-            <PaginationText>
-              Page {pagination.currentPage} of {totalPages}
-            </PaginationText>
-            <PaginationItem>
-              <PaginationFirst
-                onClick={pagination.goToFirstPage}
-                isDisabled={pagination.currentPage === 1}
-              />
-              <PaginationPrevious
-                onClick={pagination.goToPreviousPage}
-                isDisabled={pagination.currentPage === 1}
-              />
-              <PaginationNext
-                onClick={() => pagination.goToNextPage(totalPages)}
-                isDisabled={pagination.currentPage === totalPages}
-              />
-              <PaginationLast
-                onClick={() => pagination.goToLastPage(totalPages)}
-                isDisabled={pagination.currentPage === totalPages}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+        <ClientsTable
+          clients={paginatedClients}
+          selectedRows={selectedRows}
+          hoveredRow={hoveredRow}
+          openDropdown={openDropdown}
+          itemsPerPage={pagination.itemsPerPage}
+          currentPage={pagination.currentPage}
+          totalPages={totalPages}
+          onToggleRowSelection={toggleRowSelection}
+          onToggleAllRows={toggleAllRows}
+          onToggleDropdown={toggleDropdown}
+          onOpenPanelView={openClientPanel}
+          onOpenPanelEdit={openClientPanelInEditMode}
+          onOpenDeleteModal={openDeleteModal}
+          onSetItemsPerPage={pagination.setItemsPerPage}
+          onSetCurrentPage={pagination.setCurrentPage}
+        />
       </div>
 
       {/* Client Detail Modal */}
@@ -627,56 +441,12 @@ const ClientView = () => {
         </>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && clientToDelete && (
-        <>
-          <DeleteModalOverlay onClick={closeDeleteModal} />
-          <DeleteModal>
-            <DeleteModalContent>
-              <DeleteModalHeader>
-                <div className="flex items-center justify-between">
-                  <DeleteModalTitle>
-                    Confirmer la suppression
-                  </DeleteModalTitle>
-                  <DeleteModalCloseButton onClick={closeDeleteModal} />
-                </div>
-              </DeleteModalHeader>
-
-              <DeleteModalBody>
-                <div className="flex items-center gap-3">
-                  <DeleteModalIcon />
-                  <div>
-                    <h3 className="text-sm font-medium text-foreground">
-                      Supprimer le client
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Cette action est irréversible
-                    </p>
-                  </div>
-                </div>
-
-                <DeleteModalDescription>
-                  <p className="text-sm text-foreground">
-                    Êtes-vous sûr de vouloir supprimer le client <strong>"{clientToDelete.name}"</strong> ?
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Ce client sera définitivement supprimé ainsi que tous ses projets et données associées.
-                  </p>
-                </DeleteModalDescription>
-
-                <DeleteModalFooter>
-                  <DeleteModalCancelButton onClick={closeDeleteModal}>
-                    Annuler
-                  </DeleteModalCancelButton>
-                  <DeleteModalConfirmButton onClick={confirmDelete}>
-                    Supprimer définitivement
-                  </DeleteModalConfirmButton>
-                </DeleteModalFooter>
-              </DeleteModalBody>
-            </DeleteModalContent>
-          </DeleteModal>
-        </>
-      )}
+      <ClientDeleteModal
+        open={showDeleteModal && Boolean(clientToDelete)}
+        client={clientToDelete}
+        onClose={closeDeleteModal}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 };
