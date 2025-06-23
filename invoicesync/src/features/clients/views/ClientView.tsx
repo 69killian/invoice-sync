@@ -12,6 +12,15 @@ import {
   PaginationRowsPerPage,
   PaginationText,
 } from "../../../components/ui/pagination";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  TableContainer,
+} from "../../../components/ui/table";
 
 // Custom hook for pagination
 const usePagination = (initialItemsPerPage = 10) => {
@@ -221,49 +230,48 @@ const ClientView = () => {
 
       <div className="space-y-6 py-4 px-8">
         {/* Table */}
-        <div className="bg-card rounded-none border-t border-l border-r border-border">
-          <table className="w-full border-collapse" style={{ border: 'none', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left p-2 w-12 border-none" style={{ border: 'none' }}>
+        <TableContainer>
+          <Table style={{ border: 'none', borderCollapse: 'collapse' }}>
+            <TableHeader>
+              <TableRow className="border-b border-border bg-muted/20">
+                <TableHead className="w-12" style={{ border: 'none' }}>
                   <input type="checkbox" />
-                </th>
-                <th className="text-left p-2 text-sm font-normal text-muted-foreground border-none" style={{ border: 'none' }}>Nom</th>
-                <th className="text-left p-2 text-sm font-normal text-muted-foreground border-none" style={{ border: 'none' }}>Email</th>
-                <th className="text-left p-2 text-sm font-normal text-muted-foreground border-none" style={{ border: 'none' }}>Téléphone</th>
-                <th className="text-left p-2 text-sm font-normal text-muted-foreground border-none" style={{ border: 'none' }}>Status</th>
-                <th className="text-left p-2 text-sm font-normal text-muted-foreground border-none" style={{ border: 'none' }}>Projets</th>
-                <th className="text-left p-2 text-sm font-normal text-muted-foreground border-none" style={{ border: 'none' }}>Chiffre d'affaires</th>
-                <th className="text-left p-2 w-12 border-none" style={{ border: 'none' }}></th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+                <TableHead style={{ border: 'none' }}>Nom</TableHead>
+                <TableHead style={{ border: 'none' }}>Email</TableHead>
+                <TableHead style={{ border: 'none' }}>Téléphone</TableHead>
+                <TableHead style={{ border: 'none' }}>Status</TableHead>
+                <TableHead style={{ border: 'none' }}>Projets</TableHead>
+                <TableHead style={{ border: 'none' }}>Chiffre d'affaires</TableHead>
+                <TableHead className="w-12" style={{ border: 'none' }}></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {paginatedClients.map((client) => (
-                <tr 
-                  key={client.id} 
-                  className="border-b border-border bg-background transition-all duration-300 ease-in-out"
+                <TableRow
+                  key={client.id}
                   style={{
                     backgroundColor: hoveredRow === client.id ? 'rgba(0, 0, 0, 0.1)' : 'var(--background)'
                   }}
                   onMouseEnter={() => setHoveredRow(client.id)}
                   onMouseLeave={() => setHoveredRow(null)}
                 >
-                  <td className="p-2">
+                  <TableCell>
                     <input type="checkbox" />
-                  </td>
-                  <td className="p-2">
+                  </TableCell>
+                  <TableCell>
                     <div className="flex items-center gap-3">
                       <GripVertical size={16} className="text-muted-foreground" />
                       <span className="text-sm font-nomal text-foreground">{client.name}</span>
                     </div>
-                  </td>
-                  <td className="p-2">
+                  </TableCell>
+                  <TableCell>
                     <span className="text-sm font-thin text-foreground">{client.email}</span>
-                  </td>
-                  <td className="p-2">
+                  </TableCell>
+                  <TableCell>
                     <span className="text-sm font-thin text-foreground">{client.phone}</span>
-                  </td>
-                  <td className="p-2">
+                  </TableCell>
+                  <TableCell>
                     <div className="flex items-center gap-2">
                       {client.status === "Active" ? (
                         <>
@@ -277,10 +285,10 @@ const ClientView = () => {
                         </>
                       )}
                     </div>
-                  </td>
-                  <td className="p-2 text-sm font-thin text-foreground">{client.projects}</td>
-                  <td className="p-2 text-sm font-thin text-foreground">{client.revenue}</td>
-                  <td className="p-2">
+                  </TableCell>
+                  <TableCell className="text-sm font-thin text-foreground">{client.projects}</TableCell>
+                  <TableCell className="text-sm font-thin text-foreground">{client.revenue}</TableCell>
+                  <TableCell>
                     <div className="relative">
                       <button 
                         className="text-muted-foreground hover:text-foreground rounded-none border border-border flex items-center justify-center"
@@ -314,12 +322,12 @@ const ClientView = () => {
                         </div>
                       )}
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </TableContainer>
 
         {/* Pagination */}
         <Pagination>

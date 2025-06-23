@@ -12,6 +12,15 @@ import {
   PaginationRowsPerPage,
   PaginationText,
 } from "../../../components/ui/pagination";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  TableContainer,
+} from "../../../components/ui/table";
 
 const InvoiceView = () => {
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
@@ -266,51 +275,50 @@ const InvoiceView = () => {
 
         <div className="space-y-6 py-4 px-8">
           {/* Table */}
-          <div className="bg-card rounded-none border-t border-l border-r border-border">
-            <table className="w-full border-collapse" style={{ border: 'none', borderCollapse: 'collapse' }}>
-        <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left p-2 w-12 border-none" style={{ border: 'none' }}>
+          <TableContainer>
+            <Table style={{ border: 'none', borderCollapse: 'collapse' }}>
+              <TableHeader>
+                <TableRow className="border-b border-border bg-muted/20">
+                  <TableHead className="w-12" style={{ border: 'none' }}>
                     <input type="checkbox" />
-                  </th>
-                  <th className="text-left p-2 text-sm font-normal text-muted-foreground border-none" style={{ border: 'none' }}>N°</th>
-                  <th className="text-left p-2 text-sm font-normal text-muted-foreground border-none" style={{ border: 'none' }}>Client</th>
-                  <th className="text-left p-2 text-sm font-normal text-muted-foreground border-none" style={{ border: 'none' }}>Date</th>
-                  <th className="text-left p-2 text-sm font-normal text-muted-foreground border-none" style={{ border: 'none' }}>Montant</th>
-                  <th className="text-left p-2 text-sm font-normal text-muted-foreground border-none" style={{ border: 'none' }}>Statut</th>
-                  <th className="text-left p-2 w-12 border-none" style={{ border: 'none' }}></th>
-          </tr>
-        </thead>
-        <tbody>
+                  </TableHead>
+                  <TableHead style={{ border: 'none' }}>N°</TableHead>
+                  <TableHead style={{ border: 'none' }}>Client</TableHead>
+                  <TableHead style={{ border: 'none' }}>Date</TableHead>
+                  <TableHead style={{ border: 'none' }}>Montant</TableHead>
+                  <TableHead style={{ border: 'none' }}>Statut</TableHead>
+                  <TableHead className="w-12" style={{ border: 'none' }}></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {invoices.map((invoice) => (
-                  <tr 
-                    key={invoice.id} 
-                    className="border-b border-border bg-background transition-all duration-300 ease-in-out"
+                  <TableRow
+                    key={invoice.id}
                     style={{
                       backgroundColor: hoveredRow === invoice.id ? 'rgba(0, 0, 0, 0.1)' : 'var(--background)'
                     }}
                     onMouseEnter={() => setHoveredRow(invoice.id)}
                     onMouseLeave={() => setHoveredRow(null)}
                   >
-                    <td className="p-2">
+                    <TableCell>
                       <input type="checkbox" />
-                    </td>
-                    <td className="p-2">
+                    </TableCell>
+                    <TableCell>
                       <div className="flex items-center gap-3">
                         <GripVertical size={16} className="text-muted-foreground" />
                         <span className="text-sm font-nomal text-foreground">{invoice.number}</span>
                       </div>
-                    </td>
-                    <td className="p-2">
+                    </TableCell>
+                    <TableCell>
                       <span className="text-sm font-thin text-foreground">{invoice.client}</span>
-                    </td>
-                    <td className="p-2">
+                    </TableCell>
+                    <TableCell>
                       <span className="text-sm font-thin text-foreground">{invoice.date}</span>
-                    </td>
-                    <td className="p-2">
+                    </TableCell>
+                    <TableCell>
                       <span className="text-sm font-thin text-foreground">{invoice.amount}</span>
-                    </td>
-                    <td className="p-2">
+                    </TableCell>
+                    <TableCell>
                       <div className="flex items-center gap-2">
                         {invoice.status === "Payé" ? (
                           <>
@@ -324,45 +332,47 @@ const InvoiceView = () => {
                           </>
                         )}
                       </div>
-              </td>
-                    <td className="p-2 relative">
-                      <button 
-                        className="text-muted-foreground hover:text-foreground"
-                        onClick={() => toggleDropdown(invoice.id)}
-                      >
-                        <MoreHorizontal size={16} />
-                      </button>
-                      {openDropdown === invoice.id && (
-                        <div className="absolute right-0 bottom-8 w-32 bg-card border border-border rounded-none shadow-lg z-[10000] fadeInDown" style={{zIndex: 10000}}>
-                          <button
-                            onClick={() => openInvoicePanel(invoice)}
-                            className="w-full px-3 py-2 text-xs text-left hover:bg-muted flex items-center gap-2"
-                          >
-                            <Eye size={12} />
-                            Voir
-                          </button>
-                          <button 
-                            onClick={() => openInvoicePanelInEditMode(invoice)}
-                            className="w-full px-3 py-2 text-xs text-left hover:bg-muted flex items-center gap-2"
-                          >
-                            <Edit size={12} />
-                            Éditer
-                          </button>
-                          <button 
-                            onClick={() => openDeleteModal(invoice)}
-                            className="w-full px-3 py-2 text-xs text-left hover:bg-muted flex items-center gap-2 text-red-500 hover:text-red-400"
-                          >
-                            <Trash2 size={12} />
-                            Supprimer
-                          </button>
-                        </div>
-                      )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-          </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="relative">
+                        <button 
+                          className="text-muted-foreground hover:text-foreground rounded-none border border-border flex items-center justify-center"
+                          onClick={() => toggleDropdown(invoice.id)}
+                        >
+                          <MoreHorizontal size={16} />
+                        </button>
+                        {openDropdown === invoice.id && (
+                          <div className="absolute right-0 bottom-8 w-32 bg-card border border-border rounded-none shadow-lg z-[10000] fadeInDown" style={{zIndex: 10000}}>
+                            <button
+                              onClick={() => openInvoicePanel(invoice)}
+                              className="w-full px-3 py-2 text-xs text-left hover:bg-muted flex items-center gap-2"
+                            >
+                              <Eye size={12} />
+                              Voir
+                            </button>
+                            <button 
+                              onClick={() => openInvoicePanelInEditMode(invoice)}
+                              className="w-full px-3 py-2 text-xs text-left hover:bg-muted flex items-center gap-2"
+                            >
+                              <Edit size={12} />
+                              Éditer
+                            </button>
+                            <button 
+                              onClick={() => openDeleteModal(invoice)}
+                              className="w-full px-3 py-2 text-xs text-left hover:bg-muted flex items-center gap-2 text-red-500 hover:text-red-400"
+                            >
+                              <Trash2 size={12} />
+                              Supprimer
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
 
            {/* Pagination */}
       <Pagination>

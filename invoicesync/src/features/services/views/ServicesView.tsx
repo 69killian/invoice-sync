@@ -12,6 +12,15 @@ import {
   PaginationRowsPerPage,
   PaginationText,
 } from "../../../components/ui/pagination";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  TableContainer,
+} from "../../../components/ui/table";
 
 const ServicesView = () => {
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
@@ -185,59 +194,58 @@ const ServicesView = () => {
 
       <div className="space-y-6 py-4 px-8">
         {/* Table */}
-        <div className="bg-card rounded-none border-t border-l border-r border-border">
-          <table className="w-full border-collapse" style={{ border: 'none', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left p-2 w-12 border-none" style={{ border: 'none' }}>
+        <TableContainer>
+          <Table style={{ border: 'none', borderCollapse: 'collapse' }}>
+            <TableHeader>
+              <TableRow className="border-b border-border bg-muted/40">
+                <TableHead className="w-12" style={{ border: 'none' }}>
                   <input type="checkbox" />
-                </th>
-                <th className="text-left p-2 text-sm font-normal text-muted-foreground border-none" style={{ border: 'none' }}>Nom</th>
-                <th className="text-left p-2 text-sm font-normal text-muted-foreground border-none" style={{ border: 'none' }}>Description</th>
-                <th className="text-left p-2 text-sm font-normal text-muted-foreground border-none" style={{ border: 'none' }}>Tarif unitaire</th>
-                <th className="text-left p-2 text-sm font-normal text-muted-foreground border-none" style={{ border: 'none' }}>Récurrence</th>
-                <th className="text-left p-2 w-12 border-none" style={{ border: 'none' }}></th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+                <TableHead style={{ border: 'none' }}>Nom</TableHead>
+                <TableHead style={{ border: 'none' }}>Description</TableHead>
+                <TableHead style={{ border: 'none' }}>Tarif unitaire</TableHead>
+                <TableHead style={{ border: 'none' }}>Récurrence</TableHead>
+                <TableHead className="w-12" style={{ border: 'none' }}></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {services.map((service) => (
-                <tr 
-                  key={service.id} 
-                  className="border-b border-border bg-background transition-all duration-300 ease-in-out"
+                <TableRow
+                  key={service.id}
                   style={{
                     backgroundColor: hoveredRow === service.id ? 'rgba(0, 0, 0, 0.1)' : 'var(--background)'
                   }}
                   onMouseEnter={() => setHoveredRow(service.id)}
                   onMouseLeave={() => setHoveredRow(null)}
                 >
-                  <td className="p-2">
+                  <TableCell>
                     <input type="checkbox" />
-                  </td>
-                  <td className="p-2">
+                  </TableCell>
+                  <TableCell>
                     <div className="flex items-center gap-3">
                       <GripVertical size={16} className="text-muted-foreground" />
                       <span className="text-sm font-nomal text-foreground">{service.name}</span>
                     </div>
-                  </td>
-                  <td className="p-2">
+                  </TableCell>
+                  <TableCell>
                     <span className="text-sm font-thin text-foreground">{service.description}</span>
-                  </td>
-                  <td className="p-2">
+                  </TableCell>
+                  <TableCell>
                     <span className="text-sm font-thin text-foreground">{service.price}</span>
-                  </td>
-                  <td className="p-2">
+                  </TableCell>
+                  <TableCell>
                     <span className="text-sm font-thin text-foreground">{service.recurrence}</span>
-                  </td>
-                  <td className="p-2">
+                  </TableCell>
+                  <TableCell>
                     <div className="relative">
                       <button 
-                        className="text-muted-foreground hover:text-foreground"
+                        className="text-muted-foreground hover:text-foreground rounded-none border border-border flex items-center justify-center"
                         onClick={() => toggleDropdown(service.id)}
                       >
                         <MoreHorizontal size={16} />
                       </button>
                       {openDropdown === service.id && (
-                        <div className="absolute right-0 top-8 w-32 bg-card border border-border rounded-none shadow-lg z-[10000] fadeInDown" style={{zIndex: 10000}}>
+                        <div className="absolute right-0 top-8 w-32 bg-card border-none rounded-none shadow-lg z-[10000] fadeInDown" style={{zIndex: 10000}}>
                           <button
                             onClick={() => openServicePanel(service)}
                             className="w-full px-3 py-2 text-xs text-left hover:bg-muted flex items-center gap-2"
@@ -262,12 +270,12 @@ const ServicesView = () => {
                         </div>
                       )}
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </TableContainer>
 
         {/* Pagination */}
         <Pagination>
