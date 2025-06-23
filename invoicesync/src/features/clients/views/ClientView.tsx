@@ -35,6 +35,7 @@ import {
   DeleteModalCancelButton,
   DeleteModalConfirmButton,
 } from "../../../components/ui/delete-modal"
+import { TopClientsCard, TopClientsCardHeader, TopClientItem } from "../../../components/ui/top-clients-card"
 
 // Custom hook for pagination
 const usePagination = (initialItemsPerPage = 10) => {
@@ -240,6 +241,31 @@ const ClientView = () => {
           </button>
         </div>
         <div className="border-b border-gray-700 mb-4"></div>
+      </div>
+
+      {/* Top Clients Card */}
+      <div className="px-8 mb-6">
+        <TopClientsCard>
+          <TopClientsCardHeader>Top Clients</TopClientsCardHeader>
+          {clients
+            .slice()
+            .sort((a, b) => {
+              const revA = parseFloat(a.revenue.replace(/[^\d.-]/g, '').replace(',', '.')) || 0;
+              const revB = parseFloat(b.revenue.replace(/[^\d.-]/g, '').replace(',', '.')) || 0;
+              return revB - revA;
+            })
+            .slice(0, 3)
+            .map((client, index) => (
+              <TopClientItem
+                key={client.id}
+                colorClass={`bg-chart-${index + 1}`}
+                initials={client.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                name={client.name}
+                email={client.email}
+                revenue={client.revenue}
+              />
+            ))}
+        </TopClientsCard>
       </div>
 
       <div className="space-y-6 py-4 px-8">

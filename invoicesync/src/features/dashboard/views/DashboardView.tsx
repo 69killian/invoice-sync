@@ -7,6 +7,8 @@ import {
   StatCardValue,
   StatCardDescription,
 } from "../../../components/ui/stat-card"
+import { RecentActivityCard, RecentActivityCardHeader, RecentActivityItem } from "../../../components/ui/recent-activity-card"
+import { TopClientsCard, TopClientsCardHeader, TopClientItem } from "../../../components/ui/top-clients-card"
 
 const DashboardView = () => {
   // Données pour le graphique courbe
@@ -196,78 +198,20 @@ const DashboardView = () => {
         {/* Bottom Section */}
         <div className="grid gap-4 md:grid-cols-2">
           {/* Recent Activity */}
-          <div className="p-6 rounded-none border bg-background text-card-foreground space-y-6">
-            <h3 className="text-lg font-medium" style={{color: 'white', fontFamily: 'Bricolage Grotesque, sans-serif'}}>Recent Activity</h3>
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="w-2 h-2 bg-chart-1 rounded-full mt-2"></div>
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-normal" style={{color: 'white'}}>New invoice created</p>
-                  <p className="text-xs text-muted-foreground">Invoice #INV-001 for Acme Corp</p>
-                </div>
-                <span className="text-xs text-muted-foreground">2m ago</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-2 h-2 bg-chart-2 rounded-full mt-2"></div>
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-normal" style={{color: 'white'}}>Payment received</p>
-                  <p className="text-xs text-muted-foreground">$2,500 from Beta SARL</p>
-                </div>
-                <span className="text-xs text-muted-foreground">1h ago</span>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="w-2 h-2 bg-chart-3 rounded-full mt-2"></div>
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-normal" style={{color: 'white'}}>New client added</p>
-                  <p className="text-xs text-muted-foreground">Gamma SAS joined</p>
-                </div>
-                <span className="text-xs text-muted-foreground">3h ago</span>
-              </div>
-            </div>
-          </div>
+          <RecentActivityCard>
+            <RecentActivityCardHeader>Recent Activity</RecentActivityCardHeader>
+            <RecentActivityItem bulletClass="bg-chart-1" title="New invoice created" description="Invoice #INV-001 for Acme Corp" time="2m ago" />
+            <RecentActivityItem bulletClass="bg-chart-2" title="Payment received" description="$2,500 from Beta SARL" time="1h ago" />
+            <RecentActivityItem bulletClass="bg-chart-3" title="New client added" description="Gamma SAS joined" time="3h ago" />
+          </RecentActivityCard>
 
           {/* Top Clients */}
-          <div className="p-6 rounded-none border bg-background text-card-foreground space-y-6">
-            <h3 className="text-lg font-medium" style={{color: 'white', fontFamily: 'Bricolage Grotesque, sans-serif'}}>Top Clients</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-chart-1 rounded-none flex items-center justify-center">
-                    <span className="text-xs font-medium text-white">AC</span>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-normal" style={{color: 'white'}}>Acme Corp</p>
-                    <p className="text-xs text-muted-foreground">acme@corp.com</p>
-                  </div>
-                </div>
-                <span className="text-sm font-normal" style={{color: 'white'}}>€3,200</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-chart-2 rounded-none flex items-center justify-center">
-                    <span className="text-xs font-medium text-white">BS</span>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-normal" style={{color: 'white'}}>Beta SARL</p>
-                    <p className="text-xs text-muted-foreground">contact@beta.fr</p>
-                  </div>
-                </div>
-                <span className="text-sm font-normal" style={{color: 'white'}}>€2,800</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-chart-3 rounded-none flex items-center justify-center">
-                    <span className="text-xs font-medium text-white">GS</span>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-normal" style={{color: 'white'}}>Gamma SAS</p>
-                    <p className="text-xs text-muted-foreground">hello@gamma.com</p>
-                  </div>
-                </div>
-                <span className="text-sm font-normal" style={{color: 'white'}}>€2,100</span>
-              </div>
-            </div>
-          </div>
+          <TopClientsCard>
+            <TopClientsCardHeader>Top Clients</TopClientsCardHeader>
+            <TopClientItem colorClass="bg-chart-1" initials="AC" name="Acme Corp" email="acme@corp.com" revenue="€3,200" />
+            <TopClientItem colorClass="bg-chart-2" initials="BS" name="Beta SARL" email="contact@beta.fr" revenue="€2,800" />
+            <TopClientItem colorClass="bg-chart-3" initials="GS" name="Gamma SAS" email="hello@gamma.com" revenue="€2,100" />
+          </TopClientsCard>
         </div>
       </div>
     </div>
