@@ -1,4 +1,12 @@
 import React from "react";
+import {
+  StatCard,
+  StatCardHeader,
+  StatCardTitle,
+  StatCardBadge,
+  StatCardValue,
+  StatCardDescription,
+} from "../../../components/ui/stat-card"
 
 const DashboardView = () => {
   // Données pour le graphique courbe
@@ -148,49 +156,41 @@ const DashboardView = () => {
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <div className="p-6 rounded-none border bg-background text-card-foreground space-y-3">
-            <div className="flex flex-row items-center justify-between">
-              <div className="text-sm font-normal text-muted-foreground">Total Revenue</div>
-              <div className="text-xs text-chart-1 font-light font-normal border border-gray-700 px-2" style={{color: '#10b981'}}>+12.5%</div>
-            </div>
-            <div className="text-2xl font-light" style={{color: 'white'}}>$15,231.89</div>
-            <p className="text-xs text-muted-foreground">
-              +20.1% from last month
-            </p>
-          </div>
+          <StatCard>
+            <StatCardHeader>
+              <StatCardTitle>Total Revenue</StatCardTitle>
+              <StatCardBadge trend="up">+12.5%</StatCardBadge>
+            </StatCardHeader>
+            <StatCardValue>$15,231.89</StatCardValue>
+            <StatCardDescription>+20.1% from last month</StatCardDescription>
+          </StatCard>
           
-          <div className="p-6 rounded-none border bg-background text-card-foreground space-y-3">
-            <div className="flex flex-row items-center justify-between">
-              <div className="text-sm font-normal text-muted-foreground">New Customers</div>
-              <div className="text-xs text-destructive font-light font-normal border border-gray-700 px-2" style={{color: '#ef4444'}}>-20%</div>
-            </div>
-            <div className="text-2xl font-light" style={{color: 'white'}}>1,234</div>
-            <p className="text-xs text-muted-foreground">
-              Down 20% this period
-            </p>
-          </div>
+          <StatCard>
+            <StatCardHeader>
+              <StatCardTitle>New Customers</StatCardTitle>
+              <StatCardBadge trend="down">-20%</StatCardBadge>
+            </StatCardHeader>
+            <StatCardValue>1,234</StatCardValue>
+            <StatCardDescription>Down 20% this period</StatCardDescription>
+          </StatCard>
           
-          <div className="p-6 rounded-none border bg-background text-card-foreground space-y-3">
-            <div className="flex flex-row items-center justify-between">
-              <div className="text-sm font-normal text-muted-foreground">Active Accounts</div>
-              <div className="text-xs text-chart-1 font-normal border border-gray-700 px-2" style={{color: '#10b981'}}>+12.5%</div>
-            </div>
-            <div className="text-2xl font-light" style={{color: 'white'}}>45,678</div>
-            <p className="text-xs text-muted-foreground">
-              Strong user retention
-            </p>
-          </div>
+          <StatCard>
+            <StatCardHeader>
+              <StatCardTitle>Active Accounts</StatCardTitle>
+              <StatCardBadge trend="up">+12.5%</StatCardBadge>
+            </StatCardHeader>
+            <StatCardValue>45,678</StatCardValue>
+            <StatCardDescription>Strong user retention</StatCardDescription>
+          </StatCard>
           
-          <div className="p-6 rounded-none border bg-background text-card-foreground space-y-3">
-            <div className="flex flex-row items-center justify-between">
-              <div className="text-sm font-normal text-muted-foreground">Total Invoices</div>
-              <div className="text-xs text-chart-1 font-normal border border-gray-700 px-2" style={{color: '#10b981'}}>+4.5%</div>
-            </div>
-            <div className="text-2xl font-light" style={{color: 'white'}}>4.5%</div>
-            <p className="text-xs text-muted-foreground">
-              Steady performance
-            </p>
-          </div>
+          <StatCard>
+            <StatCardHeader>
+              <StatCardTitle>Total Invoices</StatCardTitle>
+              <StatCardBadge trend="up">+4.5%</StatCardBadge>
+            </StatCardHeader>
+            <StatCardValue>4.5%</StatCardValue>
+            <StatCardDescription>Steady performance</StatCardDescription>
+          </StatCard>
         </div>
 
         {/* Bottom Section */}

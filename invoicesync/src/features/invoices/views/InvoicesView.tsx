@@ -21,6 +21,14 @@ import {
   TableCell,
   TableContainer,
 } from "../../../components/ui/table";
+import {
+  StatCard,
+  StatCardHeader,
+  StatCardTitle,
+  StatCardBadge,
+  StatCardValue,
+  StatCardDescription,
+} from "../../../components/ui/stat-card"
 
 const InvoiceView = () => {
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
@@ -229,29 +237,25 @@ const InvoiceView = () => {
         {/* Statistics Cards */}
         <div className="px-8 mb-6">
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="p-6 rounded-none border bg-background text-card-foreground space-y-3">
-              <div className="flex flex-row items-center justify-between">
-                <div className="text-sm font-normal text-muted-foreground">Total Factures</div>
-                <div className="text-xs text-chart-1 font-normal border border-gray-700 px-2" style={{color: '#10b981'}}>+8.2%</div>
-              </div>
-              <div className="text-2xl font-light" style={{color: 'white'}}>156</div>
-              <p className="text-xs text-muted-foreground">
-                +12 ce mois-ci
-              </p>
-            </div>
+            <StatCard>
+              <StatCardHeader>
+                <StatCardTitle>Total Factures</StatCardTitle>
+                <StatCardBadge trend="up">+8.2%</StatCardBadge>
+              </StatCardHeader>
+              <StatCardValue>156</StatCardValue>
+              <StatCardDescription>+12 ce mois-ci</StatCardDescription>
+            </StatCard>
             
-            <div className="p-6 rounded-none border bg-background text-card-foreground space-y-3">
-              <div className="flex flex-row items-center justify-between">
-                <div className="text-sm font-normal text-muted-foreground">Chiffre d'Affaires</div>
-                <div className="text-xs text-chart-1 font-normal border border-gray-700 px-2" style={{color: '#10b981'}}>+15.3%</div>
-              </div>
-              <div className="text-2xl font-light" style={{color: 'white'}}>€47,250</div>
-              <p className="text-xs text-muted-foreground">
-                +€6,800 ce mois-ci
-              </p>
-            </div>
+            <StatCard>
+              <StatCardHeader>
+                <StatCardTitle>Chiffre d'Affaires</StatCardTitle>
+                <StatCardBadge trend="up">+15.3%</StatCardBadge>
+              </StatCardHeader>
+              <StatCardValue>€47,250</StatCardValue>
+              <StatCardDescription>+€6,800 ce mois-ci</StatCardDescription>
+            </StatCard>
           </div>
-      </div>
+        </div>
 
         {/* Search and Filters */}
         <div className="px-8 mb-4">
