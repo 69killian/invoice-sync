@@ -1,6 +1,17 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { MoreHorizontal, GripVertical, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Plus, Eye, Edit, X, ChevronDown, Trash2 } from "lucide-react";
+import { MoreHorizontal, GripVertical, Plus, Eye, Edit, X, ChevronDown, Trash2 } from "lucide-react";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationPrevious,
+  PaginationNext,
+  PaginationFirst,
+  PaginationLast,
+  PaginationRowsPerPage,
+  PaginationText,
+} from "../../../components/ui/pagination";
 
 const ServicesView = () => {
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
@@ -17,6 +28,9 @@ const ServicesView = () => {
     price: '',
     recurrence: 'Ponctuel'
   });
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   
   const services = [
     { id: 1, name: "Développement Web", description: "Création de sites web sur mesure", price: "500€", recurrence: "Ponctuel", category: "Développement", duration: "2-4 semaines" },
@@ -255,37 +269,42 @@ const ServicesView = () => {
           </table>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between px-2 text-sm text-foreground bg-background">
-          <div style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}>
-            0 of 5 row(s) selected.
-          </div>
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <span style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}>Rows per page</span>
-              <select className="bg-muted/5 hover:bg-muted border border-border font-thin rounded-none px-3 py-1 text-foreground min-w-16">
-                <option>10</option>
-                <option>20</option>
-                <option>50</option>
-              </select>
-            </div>
-            <div style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}>Page 1 of 1</div>
-            <div className="flex items-center gap-1">
-              <button className="p-2 bg-muted/5 hover:bg-muted border border-border rounded-none disabled:opacity-50 w-8 h-8 flex items-center justify-center" disabled>
-                <ChevronsLeft size={14} />
-              </button>
-              <button className="p-2 bg-muted/5 hover:bg-muted border border-border rounded-none disabled:opacity-50 w-8 h-8 flex items-center justify-center" disabled>
-                <ChevronLeft size={14} />
-              </button>
-              <button className="p-2 bg-muted/5 hover:bg-muted border border-border rounded-none disabled:opacity-50 w-8 h-8 flex items-center justify-center" disabled>
-                <ChevronRight size={14} />
-              </button>
-              <button className="p-2 bg-muted/5 hover:bg-muted border border-border rounded-none disabled:opacity-50 w-8 h-8 flex items-center justify-center" disabled>
-                <ChevronsRight size={14} />
-              </button>
-            </div>
-          </div>
-        </div>
+        {/* Pagination */}
+        <Pagination>
+          <PaginationText>
+            {selectedRows.length} of {services.length} service(s) selected.
+          </PaginationText>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationText>Rows per page</PaginationText>
+              <PaginationRowsPerPage
+                value={itemsPerPage}
+                onChange={(e) => setItemsPerPage(Number(e.target.value))}
+              />
+            </PaginationItem>
+            <PaginationText>
+              Page {currentPage} of {totalPages}
+            </PaginationText>
+            <PaginationItem>
+              <PaginationFirst
+                onClick={() => setCurrentPage(1)}
+                isDisabled={currentPage === 1}
+              />
+              <PaginationPrevious
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                isDisabled={currentPage === 1}
+              />
+              <PaginationNext
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                isDisabled={currentPage === totalPages}
+              />
+              <PaginationLast
+                onClick={() => setCurrentPage(totalPages)}
+                isDisabled={currentPage === totalPages}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       </div>
 
       {/* Service Detail Modal - Moved outside main content to cover entire page */}
