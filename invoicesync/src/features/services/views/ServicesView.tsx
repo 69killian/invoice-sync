@@ -1,40 +1,9 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { MoreHorizontal, GripVertical, Plus, Eye, Edit, X, ChevronDown, Trash2 } from "lucide-react";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationPrevious,
-  PaginationNext,
-  PaginationFirst,
-  PaginationLast,
-  PaginationRowsPerPage,
-  PaginationText,
-} from "../../../components/ui/pagination";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-  TableContainer,
-} from "../../../components/ui/table";
-import {
-  DeleteModal,
-  DeleteModalOverlay,
-  DeleteModalContent,
-  DeleteModalHeader,
-  DeleteModalTitle,
-  DeleteModalCloseButton,
-  DeleteModalBody,
-  DeleteModalIcon,
-  DeleteModalDescription,
-  DeleteModalFooter,
-  DeleteModalCancelButton,
-  DeleteModalConfirmButton,
-} from "../../../components/ui/delete-modal"
+import {X, ChevronDown } from "lucide-react";
+import ServicesHeader from "../components/ServicesHeader"
+import ServicesSearchFilters from "../components/ServicesSearchFilters"
+import ServicesTable from "../components/ServicesTable"
+import ServiceDeleteModal from "../components/ServiceDeleteModal"
 
 const ServicesView = () => {
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
@@ -173,161 +142,38 @@ const ServicesView = () => {
   return (
     <div className="">
       {/* Header */}
-      <div className="px-8">
-        <div className="flex items-center justify-between px-8">
-          <p className="font-normal text-sm py-3" style={{color: 'white', fontFamily: 'Bricolage Grotesque, sans-serif'}}>
-            Prestations
-          </p>
-          <button 
-            onClick={openCreatePanel}
-            className="text-xs px-3 py-1 flex items-center gap-2 text-muted-foreground bg-card hover:bg-muted hover:text-foreground transition-colors" 
-            style={{border: '1px solid #374151', fontFamily: 'Roboto Mono, monospace', fontWeight: 400, textDecoration: 'none'}}
-          >
-            <Plus size={14} />
-            Nouvelle prestation
-          </button>
-        </div>
-        <div className="border-b border-gray-700 mb-4"></div>
-      </div>
+      <ServicesHeader onCreateClick={openCreatePanel} />
 
       {/* Search and Filters */}
-      <div className="px-8 mb-4">
-        <div className="flex gap-4">
-          <input 
-            type="text" 
-            placeholder="Recherche nom..." 
-            className="bg-background border border-border text-xs px-3 py-2 rounded-none text-foreground w-64"
-          />
-          <select className="bg-background border border-border text-xs px-3 py-2 rounded-none text-foreground">
-            <option>Filtrer</option>
-            <option>Nom</option>
-            <option>Récurrence</option>
-          </select>
-        </div>
-      </div>
+      <ServicesSearchFilters />
 
       <div className="space-y-6 py-4 px-8">
-        {/* Table */}
-        <TableContainer>
-          <Table style={{ border: 'none', borderCollapse: 'collapse' }}>
-            <TableHeader>
-              <TableRow className="border-b border-border bg-muted/40">
-                <TableHead className="w-12" style={{ border: 'none' }}>
-                  <input type="checkbox" />
-                </TableHead>
-                <TableHead style={{ border: 'none' }}>Nom</TableHead>
-                <TableHead style={{ border: 'none' }}>Description</TableHead>
-                <TableHead style={{ border: 'none' }}>Tarif unitaire</TableHead>
-                <TableHead style={{ border: 'none' }}>Récurrence</TableHead>
-                <TableHead className="w-12" style={{ border: 'none' }}></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {services.map((service) => (
-                <TableRow
-                  key={service.id}
-                  style={{
-                    backgroundColor: hoveredRow === service.id ? 'rgba(0, 0, 0, 0.1)' : 'var(--background)'
-                  }}
-                  onMouseEnter={() => setHoveredRow(service.id)}
-                  onMouseLeave={() => setHoveredRow(null)}
-                >
-                  <TableCell>
-                    <input type="checkbox" />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <GripVertical size={16} className="text-muted-foreground" />
-                      <span className="text-sm font-nomal text-foreground">{service.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm font-thin text-foreground">{service.description}</span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm font-thin text-foreground">{service.price}</span>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm font-thin text-foreground">{service.recurrence}</span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="relative">
-                      <button 
-                        className="text-muted-foreground hover:text-foreground rounded-none border border-border flex items-center justify-center"
-                        onClick={() => toggleDropdown(service.id)}
-                      >
-                        <MoreHorizontal size={16} />
-                      </button>
-                      {openDropdown === service.id && (
-                        <div className="absolute right-0 top-8 w-32 bg-card border-none rounded-none shadow-lg z-[10000] fadeInDown" style={{zIndex: 10000}}>
-                          <button
-                            onClick={() => openServicePanel(service)}
-                            className="w-full px-3 py-2 text-xs text-left hover:bg-muted flex items-center gap-2"
-                          >
-                            <Eye size={12} />
-                            Voir
-                          </button>
-                          <button 
-                            onClick={() => openServicePanelInEditMode(service)}
-                            className="w-full px-3 py-2 text-xs text-left hover:bg-muted flex items-center gap-2"
-                          >
-                            <Edit size={12} />
-                            Éditer
-                          </button>
-                          <button 
-                            onClick={() => openDeleteModal(service)}
-                            className="w-full px-3 py-2 text-xs text-left hover:bg-muted flex items-center gap-2 text-red-500 hover:text-red-400"
-                          >
-                            <Trash2 size={12} />
-                            Supprimer
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-
-        {/* Pagination */}
-        <Pagination>
-          <PaginationText>
-            {selectedRows.length} of {services.length} service(s) selected.
-          </PaginationText>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationText>Rows per page</PaginationText>
-              <PaginationRowsPerPage
-                value={itemsPerPage}
-                onChange={(e) => setItemsPerPage(Number(e.target.value))}
-              />
-            </PaginationItem>
-            <PaginationText>
-              Page {currentPage} of {totalPages}
-            </PaginationText>
-            <PaginationItem>
-              <PaginationFirst
-                onClick={() => setCurrentPage(1)}
-                isDisabled={currentPage === 1}
-              />
-              <PaginationPrevious
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                isDisabled={currentPage === 1}
-              />
-              <PaginationNext
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                isDisabled={currentPage === totalPages}
-              />
-              <PaginationLast
-                onClick={() => setCurrentPage(totalPages)}
-                isDisabled={currentPage === totalPages}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+        <ServicesTable
+          services={services}
+          selectedRows={selectedRows}
+          hoveredRow={hoveredRow}
+          openDropdown={openDropdown}
+          itemsPerPage={itemsPerPage}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onToggleRowSelection={toggleRowSelection}
+          onToggleAllRows={toggleAllRows}
+          onToggleDropdown={toggleDropdown}
+          onOpenPanelView={openServicePanel}
+          onOpenPanelEdit={openServicePanelInEditMode}
+          onOpenDeleteModal={openDeleteModal}
+          onSetItemsPerPage={setItemsPerPage}
+          onSetCurrentPage={setCurrentPage}
+        />
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ServiceDeleteModal
+        open={showDeleteModal && Boolean(serviceToDelete)}
+        service={serviceToDelete}
+        onClose={closeDeleteModal}
+        onConfirm={confirmDelete}
+      />
 
       {/* Service Detail Modal - Moved outside main content to cover entire page */}
       {(selectedService || isCreating) && (
@@ -531,57 +377,6 @@ const ServicesView = () => {
               </div>
             )}
           </div>
-        </>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && serviceToDelete && (
-        <>
-          <DeleteModalOverlay onClick={closeDeleteModal} />
-          <DeleteModal>
-            <DeleteModalContent>
-              <DeleteModalHeader>
-                <div className="flex items-center justify-between">
-                  <DeleteModalTitle>
-                    Confirmer la suppression
-                  </DeleteModalTitle>
-                  <DeleteModalCloseButton onClick={closeDeleteModal} />
-                </div>
-              </DeleteModalHeader>
-
-              <DeleteModalBody>
-                <div className="flex items-center gap-3">
-                  <DeleteModalIcon />
-                  <div>
-                    <h3 className="text-sm font-medium text-foreground">
-                      Supprimer la prestation
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Cette action est irréversible
-                    </p>
-                  </div>
-                </div>
-
-                <DeleteModalDescription>
-                  <p className="text-sm text-foreground">
-                    Êtes-vous sûr de vouloir supprimer la prestation <strong>"{serviceToDelete.name}"</strong> ?
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Cette prestation sera définitivement supprimée et ne pourra plus être utilisée dans de nouvelles factures.
-                  </p>
-                </DeleteModalDescription>
-
-                <DeleteModalFooter>
-                  <DeleteModalCancelButton onClick={closeDeleteModal}>
-                    Annuler
-                  </DeleteModalCancelButton>
-                  <DeleteModalConfirmButton onClick={confirmDelete}>
-                    Supprimer définitivement
-                  </DeleteModalConfirmButton>
-                </DeleteModalFooter>
-              </DeleteModalBody>
-            </DeleteModalContent>
-          </DeleteModal>
         </>
       )}
     </div>
