@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, ChevronDown } from "lucide-react";
+import { X, ChevronDown, FileText } from "lucide-react";
 import { useForm, useFieldArray } from 'react-hook-form';
 import StatCards from "../components/StatCards"
 import InvoicesHeader from "../components/InvoicesHeader"
@@ -11,6 +11,7 @@ import type { Invoice, InvoiceCreate, InvoiceUpdate } from "../types";
 import { useClients } from "../../clients/hooks/useClients";
 import { useServices as useServicesList } from "../../services/hooks/useServices";
 import { useAuth } from "../../../contexts/AuthContext";
+import { invoiceAPI } from "../../../lib/api";
 
 // pagination hook (reuse)
 const usePagination = (initial = 10) => {
@@ -283,6 +284,22 @@ const InvoicesView = () => {
 
   const confirmDelete = () => {
     if (invoiceToDelete) deleteMut.mutate(invoiceToDelete.id, { onSuccess: closeDelete });
+  };
+
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
+  const handleGeneratePdf = async () => {
+    if (!selectedInvoice) return;
+    
+    setIsGeneratingPdf(true);
+    try {
+      await invoiceAPI.generatePdf(selectedInvoice.id);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      // TODO: Add error toast notification
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   if (isLoading) return <div className="p-8 text-center">Chargement...</div>;
@@ -602,7 +619,7 @@ const InvoicesView = () => {
             </div>
 
             {!isCreating && (
-              <div className="absolute px-6 py-2">
+              <div className="absolute px-6 py-2 flex gap-2">
                 <button 
                   onClick={() => setIsEditing(!isEditing)}
                   className="px-3 py-1 text-xs rounded-none transition-colors flex items-center gap-2 border"
@@ -616,6 +633,22 @@ const InvoicesView = () => {
                   {isEditing ? 'Voir' : 'Modifier'}
                   <ChevronDown size={14} />
                 </button>
+                {!isEditing && (
+                  <button 
+                    onClick={handleGeneratePdf}
+                    disabled={isGeneratingPdf}
+                    className="px-3 py-1 text-xs rounded-none transition-colors flex items-center gap-2 border"
+                    style={{
+                      backgroundColor: 'white',
+                      color: 'black',
+                      fontFamily: 'Bricolage Grotesque, sans-serif',
+                      border: '1px solid #d1d5db'
+                    }}
+                  >
+                    {isGeneratingPdf ? 'Génération...' : 'PDF'}
+                    <FileText size={14} />
+                  </button>
+                )}
               </div>
             )}
           </div>

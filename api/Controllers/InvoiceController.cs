@@ -9,6 +9,8 @@ using api.DTOs;
 using api.Models;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using api.Documents;
+using QuestPDF.Infrastructure;
 
 namespace api.Controllers
 {
@@ -310,6 +312,44 @@ namespace api.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        // GET: api/invoice/{id}/pdf
+        [HttpGet("{id}/pdf")]
+        public async Task<IActionResult> GetInvoicePdf(Guid id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return Unauthorized();
+
+            var invoice = await _context.Invoices
+                .Include(i => i.Client)
+                .Include(i => i.Services)
+                    .ThenInclude(s => s.Service)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(i => i.Id == id && i.UserId == Guid.Parse(userId));
+
+            if (invoice is null)
+                return NotFound();
+
+            if (invoice.Client is null || !invoice.Services.Any() || invoice.Services.Any(s => s.Service is null))
+            {
+                return BadRequest("La facture est incomplète (client ou services manquants)");
+            }
+
+            try
+            {
+                QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+                var document = new InvoiceDocument(invoice);
+                var pdfBytes = document.GeneratePdf();
+                return File(pdfBytes, "application/pdf", $"facture-{invoice.InvoiceNumber}.pdf");
+            }
+            catch (Exception ex)
+            {
+                // Log the error
+                Console.WriteLine($"Error generating PDF: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                return StatusCode(500, "An error occurred while generating the PDF");
+            }
         }
     }
 }

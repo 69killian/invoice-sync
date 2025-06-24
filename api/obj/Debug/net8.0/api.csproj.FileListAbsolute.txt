@@ -114,3 +114,15 @@ C:\Users\marty\Desktop\InvoiceSync\api\bin\Debug\net8.0\Microsoft.IdentityModel.
 C:\Users\marty\Desktop\InvoiceSync\api\bin\Debug\net8.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
 C:\Users\marty\Desktop\InvoiceSync\api\bin\Debug\net8.0\Microsoft.IdentityModel.Tokens.dll
 C:\Users\marty\Desktop\InvoiceSync\api\bin\Debug\net8.0\System.IdentityModel.Tokens.Jwt.dll
+C:\Users\marty\Desktop\InvoiceSync\api\bin\Debug\net8.0\HarfBuzzSharp.dll
+C:\Users\marty\Desktop\InvoiceSync\api\bin\Debug\net8.0\QuestPDF.dll
+C:\Users\marty\Desktop\InvoiceSync\api\bin\Debug\net8.0\SkiaSharp.dll
+C:\Users\marty\Desktop\InvoiceSync\api\bin\Debug\net8.0\SkiaSharp.HarfBuzz.dll
+C:\Users\marty\Desktop\InvoiceSync\api\bin\Debug\net8.0\runtimes\osx\native\libHarfBuzzSharp.dylib
+C:\Users\marty\Desktop\InvoiceSync\api\bin\Debug\net8.0\runtimes\win-arm64\native\libHarfBuzzSharp.dll
+C:\Users\marty\Desktop\InvoiceSync\api\bin\Debug\net8.0\runtimes\win-x64\native\libHarfBuzzSharp.dll
+C:\Users\marty\Desktop\InvoiceSync\api\bin\Debug\net8.0\runtimes\win-x86\native\libHarfBuzzSharp.dll
+C:\Users\marty\Desktop\InvoiceSync\api\bin\Debug\net8.0\runtimes\osx\native\libSkiaSharp.dylib
+C:\Users\marty\Desktop\InvoiceSync\api\bin\Debug\net8.0\runtimes\win-arm64\native\libSkiaSharp.dll
+C:\Users\marty\Desktop\InvoiceSync\api\bin\Debug\net8.0\runtimes\win-x64\native\libSkiaSharp.dll
+C:\Users\marty\Desktop\InvoiceSync\api\bin\Debug\net8.0\runtimes\win-x86\native\libSkiaSharp.dll

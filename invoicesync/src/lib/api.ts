@@ -77,4 +77,24 @@ export const invoiceAPI = {
   create: (payload: InvoiceCreate) => post<Invoice>('/invoice', payload),
   update: (id: string, payload: InvoiceUpdate) => put(`/invoice/${id}`, payload),
   remove: (id: string) => del(`/invoice/${id}`),
+  generatePdf: async (id: string) => {
+    const response = await fetch(`${API_URL}/invoice/${id}/pdf`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to generate PDF');
+    }
+    
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `facture-${id}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  },
 }; 
