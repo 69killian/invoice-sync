@@ -20,21 +20,22 @@ import {
   TableCell,
   TableContainer,
 } from "../../../components/ui/table"
+import type { Service } from '../types'
 
 interface ServicesTableProps {
-  services: any[]
-  selectedRows: number[]
-  hoveredRow: number | null
-  openDropdown: number | null
+  services: Service[]
+  selectedRows: string[]
+  hoveredRow: string | null
+  openDropdown: string | null
   itemsPerPage: number
   currentPage: number
   totalPages: number
-  onToggleRowSelection: (id: number) => void
+  onToggleRowSelection: (id: string) => void
   onToggleAllRows: () => void
-  onToggleDropdown: (id: number) => void
-  onOpenPanelView: (service: any) => void
-  onOpenPanelEdit: (service: any) => void
-  onOpenDeleteModal: (service: any) => void
+  onToggleDropdown: (id: string) => void
+  onOpenPanelView: (service: Service) => void
+  onOpenPanelEdit: (service: Service) => void
+  onOpenDeleteModal: (service: Service) => void
   onSetItemsPerPage: (val: number) => void
   onSetCurrentPage: (val: number) => void
 }
@@ -94,7 +95,7 @@ const ServicesTable: React.FC<ServicesTableProps> = ({
                 <span className="text-sm font-thin text-foreground">{service.description}</span>
               </TableCell>
               <TableCell>
-                <span className="text-sm font-thin text-foreground">{service.price}</span>
+                <span className="text-sm font-thin text-foreground">{service.unitPrice.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</span>
               </TableCell>
               <TableCell>
                 <span className="text-sm font-thin text-foreground">{service.recurrence}</span>

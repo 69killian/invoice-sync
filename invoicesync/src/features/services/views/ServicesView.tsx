@@ -1,77 +1,116 @@
 import React, { useState } from "react";
-import {X, ChevronDown } from "lucide-react";
-import ServicesHeader from "../components/ServicesHeader"
-import ServicesSearchFilters from "../components/ServicesSearchFilters"
-import ServicesTable from "../components/ServicesTable"
-import ServiceDeleteModal from "../components/ServiceDeleteModal"
+import { X, ChevronDown } from "lucide-react";
+import { useForm } from 'react-hook-form';
+import { useServices, useCreateService, useUpdateService, useDeleteService } from "../hooks/useServices";
+import type { Service, ServiceCreate, ServiceUpdate } from "../types";
+import ServicesHeader from "../components/ServicesHeader";
+import ServicesSearchFilters from "../components/ServicesSearchFilters";
+import ServicesTable from "../components/ServicesTable";
+import ServiceDeleteModal from "../components/ServiceDeleteModal";
+import { useAuth } from "../../../contexts/AuthContext";
+
+// Custom hook for pagination (identique à celui dans ClientView)
+const usePagination = (initialItemsPerPage = 10) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(initialItemsPerPage);
+
+  const getTotalPages = (totalItems: number) => Math.ceil(totalItems / itemsPerPage);
+
+  const goToFirstPage = () => setCurrentPage(1);
+  const goToLastPage = (totalPages: number) => setCurrentPage(totalPages);
+  const goToPreviousPage = () => setCurrentPage((prev) => Math.max(1, prev - 1));
+  const goToNextPage = (totalPages: number) => setCurrentPage((prev) => Math.min(totalPages, prev + 1));
+
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1);
+  };
+
+  const getPaginatedData = <T,>(data: T[]): T[] => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return data.slice(startIndex, endIndex);
+  };
+
+  return {
+    currentPage,
+    itemsPerPage,
+    setCurrentPage,
+    setItemsPerPage: handleItemsPerPageChange,
+    goToFirstPage,
+    goToLastPage,
+    goToPreviousPage,
+    goToNextPage,
+    getTotalPages,
+    getPaginatedData,
+  };
+};
 
 const ServicesView = () => {
-  const [selectedRows, setSelectedRows] = useState<number[]>([]);
-  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
-  const [openDropdown, setOpenDropdown] = useState<number | null>(null);
-  const [selectedService, setSelectedService] = useState<any>(null);
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [serviceToDelete, setServiceToDelete] = useState<any>(null);
-  const [editForm, setEditForm] = useState({
-    name: '',
-    description: '',
-    price: '',
-    recurrence: 'Ponctuel'
-  });
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  
-  const services = [
-    { id: 1, name: "Développement Web", description: "Création de sites web sur mesure", price: "500€", recurrence: "Ponctuel", category: "Développement", duration: "2-4 semaines" },
-    { id: 2, name: "Maintenance Site", description: "Maintenance mensuelle de site web", price: "150€", recurrence: "Mensuel", category: "Maintenance", duration: "Continu" },
-    { id: 3, name: "Consultation SEO", description: "Optimisation pour moteurs de recherche", price: "300€", recurrence: "Ponctuel", category: "Marketing", duration: "1-2 semaines" },
-    { id: 4, name: "Formation WordPress", description: "Formation à l'utilisation de WordPress", price: "200€", recurrence: "Ponctuel", category: "Formation", duration: "1 jour" },
-    { id: 5, name: "Hébergement Web", description: "Hébergement et nom de domaine", price: "50€", recurrence: "Mensuel", category: "Infrastructure", duration: "Continu" },
-  ];
+  const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
 
-  const toggleRowSelection = (id: number) => {
-    setSelectedRows(prev => 
-      prev.includes(id) 
-        ? prev.filter(rowId => rowId !== id)
-        : [...prev, id]
-    );
+  // filtres
+  const [searchTerm, setSearchTerm] = useState('');
+  const [recurrenceFilter, setRecurrenceFilter] = useState('');
+
+  // pagination
+  const pagination = usePagination(10);
+
+  // RHF form
+  const { register, handleSubmit, reset } = useForm<ServiceCreate | ServiceUpdate>({
+    defaultValues: { name: '', description: '', unitPrice: 0, recurrence: 'Ponctuel' },
+  });
+
+  const { user } = useAuth();
+
+  // TanStack hooks
+  const { data: services = [], isLoading } = useServices();
+  const createMut = useCreateService();
+  const updateMut = useUpdateService();
+  const deleteMut = useDeleteService();
+
+  // filtrage
+  const filteredServices = services.filter((s) => {
+    const matchesName = s.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRecurrence = recurrenceFilter ? s.recurrence === recurrenceFilter : true;
+    return matchesName && matchesRecurrence;
+  });
+
+  // pagination
+  const paginatedServices = pagination.getPaginatedData<Service>(filteredServices);
+  const totalPages = pagination.getTotalPages(filteredServices.length);
+
+  if (isLoading) return <div className="p-8 text-center">Chargement...</div>;
+
+  // sélection & dropdown
+  const toggleRowSelection = (id: string) => {
+    setSelectedRows((prev) => (prev.includes(id) ? prev.filter((rowId) => rowId !== id) : [...prev, id]));
   };
 
   const toggleAllRows = () => {
-    setSelectedRows(prev => 
-      prev.length === services.length 
-        ? []
-        : services.map(service => service.id)
-    );
+    setSelectedRows((prev) => (prev.length === paginatedServices.length ? [] : paginatedServices.map((s) => s.id)));
   };
 
-  const toggleDropdown = (id: number) => {
-    setOpenDropdown(openDropdown === id ? null : id);
-  };
+  const toggleDropdown = (id: string) => setOpenDropdown(openDropdown === id ? null : id);
 
-  const openServicePanel = (service: any) => {
+  // panel view / edit / create
+  const openServicePanel = (service: Service) => {
     setSelectedService(service);
-    setEditForm({
-      name: service.name,
-      description: service.description,
-      price: service.price,
-      recurrence: service.recurrence
-    });
+    reset({ name: service.name, description: service.description ?? '', unitPrice: service.unitPrice, recurrence: service.recurrence ?? 'Ponctuel' });
     setIsEditing(false);
     setOpenDropdown(null);
   };
 
-  const openServicePanelInEditMode = (service: any) => {
+  const openServicePanelInEditMode = (service: Service) => {
     setSelectedService(service);
-    setEditForm({
-      name: service.name,
-      description: service.description,
-      price: service.price,
-      recurrence: service.recurrence
-    });
+    reset({ name: service.name, description: service.description ?? '', unitPrice: service.unitPrice, recurrence: service.recurrence ?? 'Ponctuel' });
     setIsEditing(true);
     setOpenDropdown(null);
   };
@@ -84,45 +123,24 @@ const ServicesView = () => {
 
   const openCreatePanel = () => {
     setSelectedService(null);
-    setEditForm({
-      name: '',
-      description: '',
-      price: '',
-      recurrence: 'Ponctuel'
-    });
+    reset({ name: '', description: '', unitPrice: 0, recurrence: 'Ponctuel' });
     setIsCreating(true);
     setIsEditing(false);
   };
 
-  const toggleEditMode = () => {
-    setIsEditing(!isEditing);
-  };
+  const toggleEditMode = () => setIsEditing(!isEditing);
 
-  const handleInputChange = (field: string, value: string) => {
-    setEditForm(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const handleSaveChanges = () => {
+  const onSubmit = handleSubmit((data: ServiceCreate | ServiceUpdate) => {
     if (isCreating) {
-      // Here you would typically save the new service to your backend
-      console.log('Creating new service:', editForm);
-      setIsCreating(false);
-    } else {
-      // Here you would typically save the changes to your backend
-      console.log('Saving changes:', editForm);
-      setIsEditing(false);
-      // Update the selectedService with new values
-      setSelectedService({
-        ...selectedService,
-        ...editForm
-      });
+      const payload: ServiceCreate = { ...data, userId: user?.id } as ServiceCreate;
+      createMut.mutate(payload, { onSuccess: () => { setIsCreating(false); reset(); } });
+    } else if (selectedService) {
+      updateMut.mutate({ id: selectedService!.id, payload: data as ServiceUpdate }, { onSuccess: () => setIsEditing(false) });
     }
-  };
+  });
 
-  const openDeleteModal = (service: any) => {
+  // suppression
+  const openDeleteModal = (service: Service) => {
     setServiceToDelete(service);
     setShowDeleteModal(true);
     setOpenDropdown(null);
@@ -134,9 +152,7 @@ const ServicesView = () => {
   };
 
   const confirmDelete = () => {
-    // Here you would typically delete the service from your backend
-    console.log('Deleting service:', serviceToDelete);
-    closeDeleteModal();
+    if (serviceToDelete) deleteMut.mutate(serviceToDelete.id, { onSuccess: closeDeleteModal });
   };
 
   return (
@@ -145,16 +161,21 @@ const ServicesView = () => {
       <ServicesHeader onCreateClick={openCreatePanel} />
 
       {/* Search and Filters */}
-      <ServicesSearchFilters />
+      <ServicesSearchFilters
+        searchTerm={searchTerm}
+        recurrenceFilter={recurrenceFilter}
+        onSearchTermChange={setSearchTerm}
+        onRecurrenceFilterChange={setRecurrenceFilter}
+      />
 
       <div className="space-y-6 py-4 px-8">
         <ServicesTable
-          services={services}
+          services={paginatedServices}
           selectedRows={selectedRows}
           hoveredRow={hoveredRow}
           openDropdown={openDropdown}
-          itemsPerPage={itemsPerPage}
-          currentPage={currentPage}
+          itemsPerPage={pagination.itemsPerPage}
+          currentPage={pagination.currentPage}
           totalPages={totalPages}
           onToggleRowSelection={toggleRowSelection}
           onToggleAllRows={toggleAllRows}
@@ -162,8 +183,8 @@ const ServicesView = () => {
           onOpenPanelView={openServicePanel}
           onOpenPanelEdit={openServicePanelInEditMode}
           onOpenDeleteModal={openDeleteModal}
-          onSetItemsPerPage={setItemsPerPage}
-          onSetCurrentPage={setCurrentPage}
+          onSetItemsPerPage={pagination.setItemsPerPage}
+          onSetCurrentPage={pagination.setCurrentPage}
         />
       </div>
 
@@ -221,13 +242,13 @@ const ServicesView = () => {
               {!isCreating && (
                 <>
                   <div className="mt-2 text-sm text-muted-foreground">
-                    Nom: {selectedService.name}
+                    Nom: {selectedService?.name}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    Tarif: {selectedService.price}
+                    Tarif: {selectedService?.unitPrice}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    Récurrence: {selectedService.recurrence}
+                    Récurrence: {selectedService?.recurrence}
                   </div>
                 </>
               )}
@@ -241,7 +262,7 @@ const ServicesView = () => {
                     <div>
                       <h3 className="text-sm font-medium text-muted-foreground mb-2">Description</h3>
                       <div className="text-sm text-foreground">
-                        {selectedService.description}
+                        {selectedService?.description}
                       </div>
                     </div>
 
@@ -255,8 +276,8 @@ const ServicesView = () => {
                       <div>
                         <h3 className="text-sm font-medium text-muted-foreground mb-2">Tarification</h3>
                         <div className="text-sm text-foreground space-y-2">
-                          <div>Prix unitaire: {selectedService.price}</div>
-                          <div>Type: {selectedService.recurrence}</div>
+                          <div>Prix unitaire: {selectedService?.unitPrice}</div>
+                          <div>Type: {selectedService?.recurrence}</div>
                         </div>
                       </div>
                     </div>
@@ -264,10 +285,7 @@ const ServicesView = () => {
                     <div>
                       <h3 className="text-sm font-medium text-muted-foreground mb-2">Configuration</h3>
                       <div className="text-xs text-muted-foreground space-y-1">
-                        <div>Créé le: 15 Mars 2024</div>
-                        <div>Dernière modification: 22 Mars 2024</div>
-                        <div>Créé par: Martin Dupont</div>
-                        <div>Modifié par: Martin Dupont</div>
+                        <div>Créé le: {selectedService ? new Date(selectedService.createdAt).toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' }) : ''}</div>
                       </div>
                     </div>
                   </>
@@ -279,13 +297,12 @@ const ServicesView = () => {
                       </h3>
                     </div>
 
-                    <div className="space-y-4">
+                    <form onSubmit={onSubmit} className="space-y-4">
                       <div>
                         <label className="text-xs font-medium text-muted-foreground">Nom de la prestation</label>
                         <input
                           type="text"
-                          value={editForm.name}
-                          onChange={(e) => handleInputChange('name', e.target.value)}
+                          {...register('name')}
                           className="w-full bg-background border border-border text-xs px-3 py-2 rounded-none text-foreground focus:outline-none focus:ring-1 focus:ring-primary mt-1"
                           placeholder="Entrez le nom de la prestation"
                         />
@@ -295,8 +312,7 @@ const ServicesView = () => {
                         <label className="text-xs font-medium text-muted-foreground">Description</label>
                         <textarea
                           rows={3}
-                          value={editForm.description}
-                          onChange={(e) => handleInputChange('description', e.target.value)}
+                          {...register('description')}
                           className="w-full bg-background border border-border text-xs px-3 py-2 rounded-none text-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none mt-1"
                           placeholder="Décrivez la prestation"
                         />
@@ -307,8 +323,7 @@ const ServicesView = () => {
                           <label className="text-xs font-medium text-muted-foreground">Tarif unitaire</label>
                           <input
                             type="text"
-                            value={editForm.price}
-                            onChange={(e) => handleInputChange('price', e.target.value)}
+                            {...register('unitPrice', { valueAsNumber: true })}
                             className="w-full bg-background border border-border text-xs px-3 py-2 rounded-none text-foreground focus:outline-none focus:ring-1 focus:ring-primary mt-1"
                             placeholder="Ex: 500€"
                           />
@@ -316,8 +331,7 @@ const ServicesView = () => {
                         <div>
                           <label className="text-xs font-medium text-muted-foreground">Récurrence</label>
                           <select
-                            value={editForm.recurrence}
-                            onChange={(e) => handleInputChange('recurrence', e.target.value)}
+                            {...register('recurrence')}
                             className="w-full bg-background border border-border text-xs px-3 py-2 rounded-none text-foreground focus:outline-none focus:ring-1 focus:ring-primary mt-1"
                           >
                             <option value="Ponctuel">Ponctuel</option>
@@ -329,7 +343,7 @@ const ServicesView = () => {
 
                       <div className="flex gap-2 pt-4">
                         <button 
-                          onClick={handleSaveChanges}
+                          type="submit"
                           className="flex-1 px-3 py-2 text-xs rounded-none transition-colors border"
                           style={{
                             backgroundColor: 'white',
@@ -353,7 +367,7 @@ const ServicesView = () => {
                           Annuler
                         </button>
                       </div>
-                    </div>
+                    </form>
                   </>
                 )}
               </div>
