@@ -2,6 +2,7 @@ import { Client, ClientCreate, ClientUpdate } from '../features/clients/types';
 import { Service, ServiceCreate, ServiceUpdate } from '../features/services/types';
 import { Invoice, InvoiceCreate, InvoiceUpdate } from '../features/invoices/types';
 import { User, UserUpdate } from '../features/settings/types';
+import { Activity } from '../features/activities/types';
 
 // URL de base de l'API : on privilégie la variable d'environnement, sinon fallback vers le port exposé par launchSettings.json
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5081/api";
@@ -143,4 +144,9 @@ export const userAPI = {
   get: (id: string) => get<User>(`/user/${id}`),
   update: (id: string, payload: UserUpdate) => put(`/user/${id}`, payload),
   remove: (id: string) => del(`/user/${id}`),
+};
+
+export const activityAPI = {
+  list: () => get<Activity[]>('/activity'),
+  get: (id: string) => get<Activity>(`/activity/${id}`),
 }; 
