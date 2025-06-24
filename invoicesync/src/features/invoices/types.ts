@@ -16,8 +16,8 @@ export interface InvoiceService {
   serviceId: string;
   serviceName: string;
   quantity: number;
-  price: number;
-  total: number;
+  unitPrice: number;
+  subtotal: number;
 }
 
 export interface InvoiceServiceItem {

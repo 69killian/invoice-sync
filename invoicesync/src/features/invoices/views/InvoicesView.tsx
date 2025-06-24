@@ -70,8 +70,8 @@ const InvoicesView = () => {
 
   // Compute stats
   const totalInvoicesCount = invoices.length;
-  const totalRevenueNumber = invoices.reduce((acc, inv) => acc + (inv.totalInclTax || 0), 0);
-  const totalRevenueFormatted = totalRevenueNumber.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+  const totalRevenueNumber = invoices.reduce((acc, inv) => acc + (inv.totalInclTax ?? 0), 0);
+  const totalRevenueFormatted = (totalRevenueNumber ?? 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
 
   // Monthly stats using ISO string slice to avoid timezone issues
   const now = new Date();
@@ -88,10 +88,10 @@ const InvoicesView = () => {
   const currentMonthInvoicesCount = invoicesThisMonth.length;
   const prevMonthInvoicesCount = invoicesPrevMonth.length;
 
-  const currentMonthRevenueNumber = invoicesThisMonth.reduce((acc, inv) => acc + (inv.totalInclTax || 0), 0);
-  const prevMonthRevenueNumber = invoicesPrevMonth.reduce((acc, inv) => acc + (inv.totalInclTax || 0), 0);
+  const currentMonthRevenueNumber = invoicesThisMonth.reduce((acc, inv) => acc + (inv.totalInclTax ?? 0), 0);
+  const prevMonthRevenueNumber = invoicesPrevMonth.reduce((acc, inv) => acc + (inv.totalInclTax ?? 0), 0);
 
-  const revenueThisMonthFormatted = currentMonthRevenueNumber.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+  const revenueThisMonthFormatted = (currentMonthRevenueNumber ?? 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
 
   const calcTrend = (curr: number, prev: number) => {
     if (prev === 0) {
@@ -396,107 +396,65 @@ const InvoicesView = () => {
               <div className="p-6 space-y-6 pb-20">
                 {!isEditing && !isCreating ? (
                   <>
-                    <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-4">
                       <div>
-                        <h3 className="text-sm font-medium text-muted-foreground mb-2">From</h3>
-                        <div className="text-sm text-foreground">
-                          <div>InvoiceSync</div>
-                          <div>contact@invoicesync.com</div>
-                          <div>123 Business Street</div>
-                          <div>Paris, France</div>
+                        <h3 className="text-sm font-medium text-muted-foreground mb-2">Informations</h3>
+                        <div className="text-sm text-foreground space-y-2">
+                          <div>N° : {selectedInvoice?.invoiceNumber}</div>
+                          <div>Client : {selectedInvoice?.clientName}</div>
+                          <div>Date d'émission : {selectedInvoice ? new Date(selectedInvoice.dateIssued).toLocaleDateString('fr-FR') : ''}</div>
+                          {selectedInvoice?.dueDate && (
+                            <div>Date d'échéance : {new Date(selectedInvoice.dueDate).toLocaleDateString('fr-FR')}</div>
+                          )}
+                          <div>Statut : {selectedInvoice?.status}</div>
                         </div>
                       </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-muted-foreground mb-2">To</h3>
-                        <div className="text-sm text-foreground">
-                          <div>{selectedInvoice?.clientName}</div>
-                          <div>client@company.com</div>
-                          <div>456 Client Avenue</div>
-                          <div>Lyon, France</div>
-                        </div>
-                      </div>
-                    </div>
 
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-4">Items</h3>
-                      <div className="border border-border rounded-none">
-                        <div className="grid grid-cols-4 gap-4 p-3 border-b border-border bg-muted/20">
-                          <div className="text-xs font-medium text-muted-foreground">Item</div>
-                          <div className="text-xs font-medium text-muted-foreground">Quantity</div>
-                          <div className="text-xs font-medium text-muted-foreground">Price</div>
-                          <div className="text-xs font-medium text-muted-foreground">Total</div>
-                        </div>
-                        <div className="grid grid-cols-4 gap-4 p-3">
-                          {selectedInvoice?.services?.map((service, index) => (
-                            <div key={index} className="grid grid-cols-4 gap-4 p-3">
-                              <div className="text-sm text-foreground">{service.serviceName}</div>
-                              <div className="text-sm text-foreground">{service.quantity}</div>
-                              <div className="text-sm text-foreground">{service.price?.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</div>
-                              <div className="text-sm text-foreground">{service.total?.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</div>
-                            </div>
-                          ))}
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground mb-4">Services</h3>
+                        <div className="border border-border rounded-none">
+                          <div className="grid grid-cols-4 gap-4 p-3 border-b border-border bg-muted/20">
+                            <div className="text-xs font-medium text-muted-foreground">Service</div>
+                            <div className="text-xs font-medium text-muted-foreground">Prix unitaire</div>
+                            <div className="text-xs font-medium text-muted-foreground">Quantité</div>
+                            <div className="text-xs font-medium text-muted-foreground">Total</div>
+                          </div>
+                          <div className="divide-y divide-border">
+                            {selectedInvoice?.services?.map((service, index) => (
+                              <div key={index} className="grid grid-cols-4 gap-4 p-3">
+                                <div className="text-sm text-foreground">{service.serviceName}</div>
+                                <div className="text-sm text-foreground">
+                                  {(service.unitPrice ?? 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                                </div>
+                                <div className="text-sm text-foreground">{service.quantity}</div>
+                                <div className="text-sm text-foreground">
+                                  {(service.subtotal ?? 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
                       
                       <div className="mt-4 space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Subtotal</span>
+                          <span className="text-muted-foreground">Total HT</span>
                           <span className="text-foreground">
-                            {selectedInvoice ? selectedInvoice.totalInclTax.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) : '€0'}
+                            {(selectedInvoice?.totalExclTax ?? 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                           </span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">VAT (20%)</span>
+                          <span className="text-muted-foreground">TVA (20%)</span>
                           <span className="text-foreground">
-                            €{(((selectedInvoice?.totalInclTax ?? 0) * 0.2)).toFixed(0)}
+                            {((selectedInvoice?.totalInclTax ?? 0) - (selectedInvoice?.totalExclTax ?? 0)).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                           </span>
                         </div>
                         <div className="flex justify-between text-lg font-semibold border-t border-border pt-2">
-                          <span style={{color: 'white'}}>Total</span>
+                          <span style={{color: 'white'}}>Total TTC</span>
                           <span style={{color: 'white'}}>
-                            €{(((selectedInvoice?.totalInclTax ?? 0) * 1.2)).toFixed(0)}
+                            {(selectedInvoice?.totalInclTax ?? 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                           </span>
                         </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-2">Payment details</h3>
-                      <div className="text-xs text-muted-foreground space-y-1">
-                        <div>Bank: InvoiceSync Bank</div>
-                        <div>Account number: 123456789</div>
-                        <div>IBAN: FR76 1234 5678 9012 3456 7890</div>
-                        <div>Swift (bic): INVOICEFR</div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-2">Notes</h3>
-                      <div className="text-xs text-muted-foreground space-y-1">
-                        <div>Thank you for your business!</div>
-                        <div>Payment is due within 30 days.</div>
-                        <div>Late payments may incur additional fees.</div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-2">Terms & Conditions</h3>
-                      <div className="text-xs text-muted-foreground space-y-1">
-                        <div>1. Payment terms: Net 30 days</div>
-                        <div>2. Late payment fee: 2% per month</div>
-                        <div>3. All work completed as per agreement</div>
-                        <div>4. No refunds after project completion</div>
-                        <div>5. Intellectual property rights transferred upon payment</div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-2">Contact Information</h3>
-                      <div className="text-xs text-muted-foreground space-y-1">
-                        <div>For questions about this invoice:</div>
-                        <div>Email: billing@invoicesync.com</div>
-                        <div>Phone: +33 1 23 45 67 89</div>
-                        <div>Address: 123 Business Street, Paris, France</div>
                       </div>
                     </div>
                   </>

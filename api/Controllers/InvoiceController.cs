@@ -39,20 +39,21 @@ namespace api.Controllers
                 .AsNoTracking()
                 .Select(i => new InvoiceDto
                 {
-                    Id = i.Id,
-                    InvoiceNumber = i.InvoiceNumber,
-                    ClientName = i.Client.Name,
+                Id = i.Id,
+                InvoiceNumber = i.InvoiceNumber,
+                ClientName = i.Client.Name,
                     TotalExclTax = i.TotalExclTax,
                     TotalInclTax = i.TotalInclTax,
-                    Status = i.Status,
+                Status = i.Status,
                     DateIssued = i.DateIssued,
                     DueDate = i.DueDate,
                     Services = i.Services.Select(s => new InvoiceServiceDto
                     {
                         ServiceId = s.ServiceId,
                         ServiceName = s.Service.Name,
-                        UnitPrice = s.Service.UnitPrice,
-                        Quantity = s.Quantity
+                        UnitPrice = s.UnitPrice,
+                        Quantity = s.Quantity,
+                        Subtotal = s.Subtotal
                     }).ToList()
                 })
                 .ToListAsync();
@@ -87,8 +88,9 @@ namespace api.Controllers
                     {
                         ServiceId = s.ServiceId,
                         ServiceName = s.Service.Name,
-                        UnitPrice = s.Service.UnitPrice,
-                        Quantity = s.Quantity
+                        UnitPrice = s.UnitPrice,
+                        Quantity = s.Quantity,
+                        Subtotal = s.Subtotal
                     }).ToList()
                 })
                 .FirstOrDefaultAsync();
@@ -139,13 +141,20 @@ namespace api.Controllers
             foreach (var svc in dto.Services)
             {
                 var service = services.First(s => s.Id == svc.ServiceId);
+                if (svc.Quantity <= 0)
+                {
+                    return BadRequest($"Invalid quantity for service {service.Name}: {svc.Quantity}");
+                }
+
                 totalExclTax += service.UnitPrice * svc.Quantity;
                 invoiceServices.Add(new InvoiceService
                 {
                     Id = Guid.NewGuid(),
                     InvoiceId = invoice.Id,
                     ServiceId = svc.ServiceId,
-                    Quantity = svc.Quantity
+                    Quantity = svc.Quantity,
+                    UnitPrice = service.UnitPrice,
+                    Subtotal = service.UnitPrice * svc.Quantity
                 });
             }
 
@@ -203,36 +212,70 @@ namespace api.Controllers
 
             if (dto.Services != null)
             {
-                var serviceIds = dto.Services.Select(s => s.ServiceId).ToList();
-                var services = await _context.Services
-                    .Where(s => serviceIds.Contains(s.Id) && s.UserId == Guid.Parse(userId))
-                    .ToListAsync();
-
-                if (services.Count != serviceIds.Count)
-                    return BadRequest("One or more services not found or not authorized");
-
-                // Remove existing services
-                _context.InvoiceServices.RemoveRange(invoice.Services);
-
-                // Calculate new totals
-                decimal totalExclTax = 0;
-                var invoiceServices = new List<InvoiceService>();
-                foreach (var svc in dto.Services)
+                try
                 {
-                    var service = services.First(s => s.Id == svc.ServiceId);
-                    totalExclTax += service.UnitPrice * svc.Quantity;
-                    invoiceServices.Add(new InvoiceService
+                    // Validate service IDs
+                    var serviceIds = dto.Services.Select(s => s.ServiceId).ToList();
+                    if (!serviceIds.Any())
                     {
-                        Id = Guid.NewGuid(),
-                        InvoiceId = invoice.Id,
-                        ServiceId = svc.ServiceId,
-                        Quantity = svc.Quantity
-                    });
-                }
+                        return BadRequest("At least one service is required");
+                    }
 
-                invoice.TotalExclTax = totalExclTax;
-                invoice.TotalInclTax = totalExclTax * 1.2m; // 20% TVA
-                await _context.InvoiceServices.AddRangeAsync(invoiceServices);
+                    // Check for invalid service IDs
+                    if (serviceIds.Any(id => id == Guid.Empty))
+                    {
+                        return BadRequest("Invalid service ID found");
+                    }
+
+                    // Verify all services belong to user
+                    var services = await _context.Services
+                        .Where(s => serviceIds.Contains(s.Id) && s.UserId == Guid.Parse(userId))
+                        .ToListAsync();
+
+                    if (services.Count != serviceIds.Count)
+                    {
+                        var foundIds = services.Select(s => s.Id).ToList();
+                        var missingIds = serviceIds.Where(id => !foundIds.Contains(id));
+                        return BadRequest($"Services not found or not authorized: {string.Join(", ", missingIds)}");
+                    }
+
+                    // Remove existing services
+                    _context.InvoiceServices.RemoveRange(invoice.Services);
+
+                    // Calculate new totals
+                    decimal totalExclTax = 0;
+                    var invoiceServices = new List<InvoiceService>();
+                    foreach (var svc in dto.Services)
+                    {
+                        var service = services.First(s => s.Id == svc.ServiceId);
+                        if (svc.Quantity <= 0)
+                        {
+                            return BadRequest($"Invalid quantity for service {service.Name}: {svc.Quantity}");
+                        }
+
+                        totalExclTax += service.UnitPrice * svc.Quantity;
+                        invoiceServices.Add(new InvoiceService
+                        {
+                            Id = Guid.NewGuid(),
+                            InvoiceId = invoice.Id,
+                            ServiceId = svc.ServiceId,
+                            Quantity = svc.Quantity,
+                            UnitPrice = service.UnitPrice,
+                            Subtotal = service.UnitPrice * svc.Quantity
+                        });
+                    }
+
+                    invoice.TotalExclTax = totalExclTax;
+                    invoice.TotalInclTax = totalExclTax * 1.2m; // 20% TVA
+                    await _context.InvoiceServices.AddRangeAsync(invoiceServices);
+                }
+                catch (Exception ex)
+                {
+                    // Log the error
+                    Console.WriteLine($"Error updating invoice services: {ex.Message}");
+                    Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                    return StatusCode(500, "An error occurred while updating invoice services");
+                }
             }
 
             if (dto.InvoiceNumber is not null)

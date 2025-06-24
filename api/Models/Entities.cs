@@ -106,6 +106,9 @@ public class InvoiceService
     public int Quantity { get; set; }
 
     [Column(TypeName="numeric")]
+    public decimal UnitPrice { get; set; }
+
+    [Column(TypeName="numeric")]
     public decimal Subtotal { get; set; }
 
     // Navigation

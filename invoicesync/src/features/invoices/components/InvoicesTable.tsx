@@ -106,7 +106,7 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
                     <MoreHorizontal size={16} />
                   </button>
                   {openDropdown === inv.id && (
-                    <div className="absolute right-0 bottom-8 w-32 bg-card border border-border rounded-none shadow-lg z-[10000] fadeInDown" style={{ zIndex: 10000 }}>
+                    <div className="absolute right-0 bottom-8 w-32 bg-card border border-border rounded-none shadow-lg z-[50] fadeInDown" style={{ zIndex: 50 }}>
                       <button onClick={() => onOpenPanelView(inv)} className="w-full px-3 py-2 text-xs text-left hover:bg-muted flex items-center gap-2">
                         <Eye size={12} />
                         Voir

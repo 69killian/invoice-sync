@@ -45,6 +45,7 @@ public class InvoiceServiceDto
     public string ServiceName { get; set; } = null!;
     public decimal UnitPrice { get; set; }
     public int Quantity { get; set; }
+    public decimal Subtotal { get; set; }
 }
 
 public class InvoiceServiceCreateDto
