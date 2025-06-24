@@ -20,28 +20,19 @@ import {
   TableCell,
   TableContainer,
 } from "../../../components/ui/table"
-
-interface Client {
-  id: number
-  name: string
-  email: string
-  phone: string
-  status: string
-  projects: number
-  revenue: string
-}
+import type { Client } from "../types"
 
 interface ClientsTableProps {
   clients: Client[]
-  selectedRows: number[]
-  hoveredRow: number | null
-  openDropdown: number | null
+  selectedRows: string[]
+  hoveredRow: string | null
+  openDropdown: string | null
   itemsPerPage: number
   currentPage: number
   totalPages: number
-  onToggleRowSelection: (id: number) => void
+  onToggleRowSelection: (id: string) => void
   onToggleAllRows: () => void
-  onToggleDropdown: (id: number) => void
+  onToggleDropdown: (id: string) => void
   onOpenPanelView: (client: Client) => void
   onOpenPanelEdit: (client: Client) => void
   onOpenDeleteModal: (client: Client) => void
@@ -112,8 +103,8 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
                   )}
                 </div>
               </TableCell>
-              <TableCell className="text-sm font-thin text-foreground">{c.projects}</TableCell>
-              <TableCell className="text-sm font-thin text-foreground">{c.revenue}</TableCell>
+              <TableCell className="text-sm font-thin text-foreground">{c.projectsCount}</TableCell>
+              <TableCell className="text-sm font-thin text-foreground">{c.totalRevenue}</TableCell>
               <TableCell>
                 <div className="relative">
                   <button className="text-muted-foreground hover:text-foreground rounded-none border border-border flex items-center justify-center" onClick={() => onToggleDropdown(c.id)}>

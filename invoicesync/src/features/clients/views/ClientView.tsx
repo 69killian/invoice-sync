@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, ChevronDown } from "lucide-react";
+import { useForm } from 'react-hook-form';
+import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from "../hooks/useClients";
+import type { ClientCreate, ClientUpdate, Client } from "../types";
 import ClientsHeader from "../components/ClientsHeader";
 import ClientsTopClients from "../components/ClientsTopClients";
 import ClientsTable from "../components/ClientsTable";
@@ -45,39 +48,35 @@ const usePagination = (initialItemsPerPage = 10) => {
 };
 
 const ClientView = () => {
-  const [selectedRows, setSelectedRows] = useState<number[]>([]);
-  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
-  const [openDropdown, setOpenDropdown] = useState<number | null>(null);
-  const [selectedClient, setSelectedClient] = useState<any>(null);
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [clientToDelete, setClientToDelete] = useState<any>(null);
-  const [editForm, setEditForm] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    status: 'Active',
-    projects: '',
-    revenue: ''
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
+  const { register, handleSubmit, reset } = useForm<ClientCreate | ClientUpdate>({
+    defaultValues: { name: '', email: '', phone: '', status: 'Active' }
   });
 
   // Use pagination hook
   const pagination = usePagination(10);
   
-  const clients = [
-    { id: 1, name: "Client 1", email: "client1@mail.com", phone: "06 00 00 00 01", address: "123 rue Exemple", status: "Active", projects: 3, revenue: "5,200€" },
-    { id: 2, name: "Client 2", email: "client2@mail.com", phone: "06 00 00 00 02", address: "123 rue Exemple", status: "Active", projects: 1, revenue: "2,800€" },
-    { id: 3, name: "Client 3", email: "client3@mail.com", phone: "06 00 00 00 03", address: "123 rue Exemple", status: "Inactive", projects: 0, revenue: "0€" },
-    { id: 4, name: "Client 4", email: "client4@mail.com", phone: "06 00 00 00 04", address: "123 rue Exemple", status: "Active", projects: 2, revenue: "3,600€" },
-    { id: 5, name: "Client 5", email: "client5@mail.com", phone: "06 00 00 00 05", address: "123 rue Exemple", status: "Active", projects: 4, revenue: "8,900€" },
-  ];
+  const { data: clients = [], isLoading } = useClients();
+  const createMut = useCreateClient();
+  const updateMut = useUpdateClient();
+  const deleteMut = useDeleteClient();
 
   // Get paginated data
-  const paginatedClients = pagination.getPaginatedData(clients);
+  const paginatedClients = pagination.getPaginatedData<Client>(clients);
   const totalPages = pagination.getTotalPages(clients.length);
 
-  const toggleRowSelection = (id: number) => {
+  if (isLoading) {
+    return <div className="p-8 text-center">Chargement...</div>;
+  }
+
+  const toggleRowSelection = (id: string) => {
     setSelectedRows(prev => 
       prev.includes(id) 
         ? prev.filter(rowId => rowId !== id)
@@ -89,38 +88,24 @@ const ClientView = () => {
     setSelectedRows(prev => 
       prev.length === clients.length 
         ? []
-        : clients.map(client => client.id)
+        : clients.map((client: Client) => client.id)
     );
   };
 
-  const toggleDropdown = (id: number) => {
+  const toggleDropdown = (id: string) => {
     setOpenDropdown(openDropdown === id ? null : id);
   };
 
-  const openClientPanel = (client: any) => {
+  const openClientPanel = (client: Client) => {
     setSelectedClient(client);
-    setEditForm({
-      name: client.name,
-      email: client.email,
-      phone: client.phone,
-      status: client.status,
-      projects: client.projects.toString(),
-      revenue: client.revenue
-    });
+    reset({ name: client.name, email: client.email ?? '', phone: client.phone ?? '', status: client.status });
     setIsEditing(false);
     setOpenDropdown(null);
   };
 
-  const openClientPanelInEditMode = (client: any) => {
+  const openClientPanelInEditMode = (client: Client) => {
     setSelectedClient(client);
-    setEditForm({
-      name: client.name,
-      email: client.email,
-      phone: client.phone,
-      status: client.status,
-      projects: client.projects.toString(),
-      revenue: client.revenue
-    });
+    reset({ name: client.name, email: client.email ?? '', phone: client.phone ?? '', status: client.status });
     setIsEditing(true);
     setOpenDropdown(null);
   };
@@ -133,14 +118,7 @@ const ClientView = () => {
 
   const openCreatePanel = () => {
     setSelectedClient(null);
-    setEditForm({
-      name: '',
-      email: '',
-      phone: '',
-      status: 'Active',
-      projects: '',
-      revenue: ''
-    });
+    reset({ name:'', email:'', phone:'', status:'Active' });
     setIsCreating(true);
     setIsEditing(false);
   };
@@ -149,32 +127,15 @@ const ClientView = () => {
     setIsEditing(!isEditing);
   };
 
-  const handleInputChange = (field: string, value: string) => {
-    setEditForm(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const handleSaveChanges = () => {
+  const onSubmit = handleSubmit((data: ClientCreate | ClientUpdate) => {
     if (isCreating) {
-      // Here you would typically save the new client to your backend
-      console.log('Creating new client:', editForm);
-      setIsCreating(false);
-    } else {
-      // Here you would typically save the changes to your backend
-      console.log('Saving changes:', editForm);
-      setIsEditing(false);
-      // Update the selectedClient with new values
-      setSelectedClient({
-        ...selectedClient,
-        ...editForm,
-        projects: parseInt(editForm.projects) || 0
-      });
+      createMut.mutate(data as ClientCreate, { onSuccess: () => { setIsCreating(false); reset(); } });
+    } else if (selectedClient) {
+      updateMut.mutate({ id: selectedClient.id, payload: data as ClientUpdate }, { onSuccess: () => { setIsEditing(false); } });
     }
-  };
+  });
 
-  const openDeleteModal = (client: any) => {
+  const openDeleteModal = (client: Client) => {
     setClientToDelete(client);
     setShowDeleteModal(true);
     setOpenDropdown(null);
@@ -186,9 +147,9 @@ const ClientView = () => {
   };
 
   const confirmDelete = () => {
-    // Here you would typically delete the client from your backend
-    console.log('Deleting client:', clientToDelete);
-    closeDeleteModal();
+    if (clientToDelete) {
+      deleteMut.mutate(clientToDelete.id, { onSuccess: closeDeleteModal });
+    }
   };
 
   return (
@@ -267,13 +228,13 @@ const ClientView = () => {
               {!isCreating && (
                 <>
                   <div className="mt-2 text-sm text-muted-foreground">
-                    Nom: {selectedClient.name}
+                    Nom: {selectedClient?.name}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    Email: {selectedClient.email}
+                    Email: {selectedClient?.email}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    Status: {selectedClient.status}
+                    Status: {selectedClient?.status}
                   </div>
                 </>
               )}
@@ -288,15 +249,15 @@ const ClientView = () => {
                       <div>
                         <h3 className="text-sm font-medium text-muted-foreground mb-2">Informations de contact</h3>
                         <div className="text-sm text-foreground space-y-2">
-                          <div>Email: {selectedClient.email}</div>
-                          <div>Téléphone: {selectedClient.phone}</div>
+                          <div>Email: {selectedClient?.email}</div>
+                          <div>Téléphone: {selectedClient?.phone}</div>
                         </div>
                       </div>
                       <div>
                         <h3 className="text-sm font-medium text-muted-foreground mb-2">Activité</h3>
                         <div className="text-sm text-foreground space-y-2">
-                          <div>Projets: {selectedClient.projects}</div>
-                          <div>Chiffre d'affaires: {selectedClient.revenue}</div>
+                          <div>Projets: {selectedClient?.projectsCount}</div>
+                          <div>Chiffre d'affaires: {selectedClient?.totalRevenue}</div>
                         </div>
                       </div>
                     </div>
@@ -304,10 +265,8 @@ const ClientView = () => {
                     <div>
                       <h3 className="text-sm font-medium text-muted-foreground mb-2">Configuration</h3>
                       <div className="text-xs text-muted-foreground space-y-1">
-                        <div>Créé le: 15 Mars 2024</div>
-                        <div>Dernière modification: 22 Mars 2024</div>
-                        <div>Créé par: Martin Dupont</div>
-                        <div>Modifié par: Martin Dupont</div>
+                        <div>Créé le: {selectedClient ? new Date(selectedClient.createdAt).toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' }) : ''}</div>
+                        {/* Vous pourrez ajouter "Créé par" si l'API renvoie l'auteur */}
                       </div>
                     </div>
                   </>
@@ -319,13 +278,12 @@ const ClientView = () => {
                       </h3>
                     </div>
 
-                    <div className="space-y-4">
+                    <form onSubmit={onSubmit} className="space-y-4">
                       <div>
                         <label className="text-xs font-medium text-muted-foreground">Nom du client</label>
                         <input
                           type="text"
-                          value={editForm.name}
-                          onChange={(e) => handleInputChange('name', e.target.value)}
+                          {...register('name')}
                           className="w-full bg-background border border-border text-xs px-3 py-2 rounded-none text-foreground focus:outline-none focus:ring-1 focus:ring-primary mt-1"
                           placeholder="Entrez le nom du client"
                         />
@@ -335,8 +293,7 @@ const ClientView = () => {
                         <label className="text-xs font-medium text-muted-foreground">Email</label>
                         <input
                           type="email"
-                          value={editForm.email}
-                          onChange={(e) => handleInputChange('email', e.target.value)}
+                          {...register('email')}
                           className="w-full bg-background border border-border text-xs px-3 py-2 rounded-none text-foreground focus:outline-none focus:ring-1 focus:ring-primary mt-1"
                           placeholder="client@example.com"
                         />
@@ -346,51 +303,26 @@ const ClientView = () => {
                         <label className="text-xs font-medium text-muted-foreground">Téléphone</label>
                         <input
                           type="tel"
-                          value={editForm.phone}
-                          onChange={(e) => handleInputChange('phone', e.target.value)}
+                          {...register('phone')}
                           className="w-full bg-background border border-border text-xs px-3 py-2 rounded-none text-foreground focus:outline-none focus:ring-1 focus:ring-primary mt-1"
                           placeholder="06 00 00 00 00"
                         />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-xs font-medium text-muted-foreground">Status</label>
-                          <select
-                            value={editForm.status}
-                            onChange={(e) => handleInputChange('status', e.target.value)}
-                            className="w-full bg-background border border-border text-xs px-3 py-2 rounded-none text-foreground focus:outline-none focus:ring-1 focus:ring-primary mt-1"
-                          >
-                            <option value="Active">Active</option>
-                            <option value="Inactive">Inactive</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-xs font-medium text-muted-foreground">Projets</label>
-                          <input
-                            type="number"
-                            value={editForm.projects}
-                            onChange={(e) => handleInputChange('projects', e.target.value)}
-                            className="w-full bg-background border border-border text-xs px-3 py-2 rounded-none text-foreground focus:outline-none focus:ring-1 focus:ring-primary mt-1"
-                            placeholder="0"
-                          />
-                        </div>
-                      </div>
-
                       <div>
-                        <label className="text-xs font-medium text-muted-foreground">Chiffre d'affaires</label>
-                        <input
-                          type="text"
-                          value={editForm.revenue}
-                          onChange={(e) => handleInputChange('revenue', e.target.value)}
+                        <label className="text-xs font-medium text-muted-foreground">Status</label>
+                        <select
+                          {...register('status')}
                           className="w-full bg-background border border-border text-xs px-3 py-2 rounded-none text-foreground focus:outline-none focus:ring-1 focus:ring-primary mt-1"
-                          placeholder="Ex: 5,200€"
-                        />
+                        >
+                          <option value="Active">Active</option>
+                          <option value="Inactive">Inactive</option>
+                        </select>
                       </div>
 
                       <div className="flex gap-2 pt-4">
                         <button 
-                          onClick={handleSaveChanges}
+                          type="submit"
                           className="flex-1 px-3 py-2 text-xs rounded-none transition-colors border"
                           style={{
                             backgroundColor: 'white',
@@ -414,7 +346,7 @@ const ClientView = () => {
                           Annuler
                         </button>
                       </div>
-                    </div>
+                    </form>
                   </>
                 )}
               </div>

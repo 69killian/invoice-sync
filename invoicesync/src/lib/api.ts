@@ -1,3 +1,5 @@
+import { Client, ClientCreate, ClientUpdate } from '../features/clients/types';
+
 // URL de base de l'API : on privilégie la variable d'environnement, sinon fallback vers le port exposé par launchSettings.json
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5081/api";
 
@@ -49,4 +51,12 @@ export function del<T>(endpoint: string) {
 
 export function put<T>(endpoint: string, body?: any) {
   return apiFetch<T>(endpoint, { method: 'PUT', body });
-} 
+}
+
+export const clientAPI = {
+  list: () => get<Client[]>('/client'),
+  get: (id: string) => get<Client>(`/client/${id}`),
+  create: (payload: ClientCreate) => post<Client>('/client', payload),
+  update: (id: string, payload: ClientUpdate) => put(`/client/${id}`, payload),
+  remove: (id: string) => del(`/client/${id}`),
+}; 

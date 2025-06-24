@@ -3,9 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using api.Data;
 using api.DTOs;
 using api.Models;
+using Microsoft.AspNetCore.Authorization;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace api.Controllers;
 
+[Authorize]
 [Route("api/[controller]")]
 [ApiController]
 public class ClientController : ControllerBase
@@ -21,7 +25,9 @@ public class ClientController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ClientDto>>> GetAllClients()
     {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var clients = await _context.Clients
+            .Where(c => c.UserId == userId)
             .AsNoTracking()
             .Select(c => new ClientDto
             {
@@ -42,9 +48,10 @@ public class ClientController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<ClientDto>> GetClientById(Guid id)
     {
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var client = await _context.Clients
             .AsNoTracking()
-            .Where(c => c.Id == id)
+            .Where(c => c.Id == id && c.UserId == userId)
             .Select(c => new ClientDto
             {
                 Id = c.Id,
@@ -68,15 +75,12 @@ public class ClientController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ClientDto>> CreateClient([FromBody] ClientCreateDto dto)
     {
-        // Validate user
-        var user = await _context.Users.FindAsync(dto.UserId);
-        if (user is null)
-            return BadRequest("Invalid userId");
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
         var client = new Client
         {
             Id = Guid.NewGuid(),
-            UserId = dto.UserId,
+            UserId = userId,
             Name = dto.Name,
             Email = dto.Email,
             Phone = dto.Phone,
@@ -105,7 +109,8 @@ public class ClientController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateClient(Guid id, [FromBody] ClientUpdateDto dto)
     {
-        var client = await _context.Clients.FindAsync(id);
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
         if (client is null)
             return NotFound();
 
@@ -126,7 +131,8 @@ public class ClientController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteClient(Guid id)
     {
-        var client = await _context.Clients.FindAsync(id);
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
         if (client is null)
             return NotFound();
 
