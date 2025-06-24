@@ -30,14 +30,14 @@ namespace api.Controllers
                 .AsNoTracking()
                 .Select(i => new InvoiceDto
                 {
-                    Id = i.Id,
-                    InvoiceNumber = i.InvoiceNumber,
-                    ClientName = i.Client.Name,
+                Id = i.Id,
+                InvoiceNumber = i.InvoiceNumber,
+                ClientName = i.Client.Name,
                     TotalExclTax = i.TotalExclTax,
                     TotalInclTax = i.TotalInclTax,
-                    Status = i.Status,
+                Status = i.Status,
                     DateIssued = i.DateIssued,
-                    DueDate = i.DueDate
+                DueDate = i.DueDate
                 })
                 .ToListAsync();
 

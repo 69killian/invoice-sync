@@ -129,6 +129,14 @@ body {
 .p-4 { padding: 1rem; }
 .p-6 { padding: 1.5rem; }
 .p-8 { padding: 2rem; }
+.p-12 { padding: 3rem; }
+.p-16 { padding: 4rem; }
+.p-20 { padding: 5rem; }
+.p-24 { padding: 6rem; }
+.p-28 { padding: 7rem; }
+.p-32 { padding: 8rem; }
+.p-36 { padding: 9rem; }
+.p-40 { padding: 10rem; }
 
 .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
 .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
@@ -645,3 +653,5 @@ table th {
     transform: rotate(360deg);
   }
 }
+
+.force-white { color:#fff !important; }
