@@ -4,11 +4,15 @@ import SettingsHeader from "../components/SettingsHeader"
 import ProfileForm from "../components/ProfileForm"
 import DeleteAccountInitialModal from "../components/DeleteAccountInitialModal"
 import DeleteAccountFinalModal from "../components/DeleteAccountFinalModal"
+import { useAuth } from "../../../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const SettingsView = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showFinalDeleteModal, setShowFinalDeleteModal] = useState(false);
   const [confirmationText, setConfirmationText] = useState("");
+  const { logout } = useAuth();
+  const navigate = useNavigate();
 
   const openDeleteModal = () => {
     setShowDeleteModal(true);
@@ -43,6 +47,16 @@ const SettingsView = () => {
       <SettingsHeader onDeleteClick={openDeleteModal} />
 
       <ProfileForm />
+
+      {/* Logout button */}
+      <div className="px-8 mt-8">
+        <button
+          onClick={async () => { await logout(); navigate('/login'); }}
+          className="btn btn-secondary"
+        >
+          Se déconnecter
+        </button>
+      </div>
 
       <DeleteAccountInitialModal
         open={showDeleteModal}

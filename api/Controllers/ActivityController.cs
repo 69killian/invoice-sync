@@ -2,11 +2,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using api.Data;
 using api.DTOs;
+using Microsoft.AspNetCore.Authorization;
 
 namespace api.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[AllowAnonymous]
 public class ActivityController : ControllerBase
 {
     private readonly AppDbContext _context;

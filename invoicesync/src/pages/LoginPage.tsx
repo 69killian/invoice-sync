@@ -9,6 +9,7 @@ import {
   DeleteModalCloseButton,
   DeleteModalBody
 } from "../components/ui/delete-modal";
+import { useAuth } from "../contexts/AuthContext";
 
 function LegalModal({
   open,
@@ -45,6 +46,7 @@ const LoginPage = () => {
   const [error, setError] = useState("");
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
   
   return (
     <div className="dark min-h-screen flex items-center justify-center bg-background">
@@ -62,23 +64,33 @@ const LoginPage = () => {
           </div>
         )}
         
-        <form onSubmit={async e => {e.preventDefault(); setLoading(true); /* TODO: call API */ setTimeout(()=>{setLoading(false)},2000);}} className="space-y-4">
+        <form onSubmit={async e => {
+          e.preventDefault();
+          const email = (e.currentTarget.elements.namedItem('email') as HTMLInputElement).value;
+          try {
+            setLoading(true);
+            await login(email);
+            window.location.href = '/';
+          } catch (err: any) {
+            setError(err.message || 'Erreur');
+          } finally {
+            setLoading(false);
+          }
+        }} className="space-y-4">
           <div className="space-y-2">
             <label className="text-sm font-medium leading-none">Email</label>
             <input 
               type="email" 
               placeholder="nom@exemple.com" 
               className="input"
+              name="email"
               required 
             />
           </div>
           
           <button type="submit" disabled={loading} className={`btn btn-secondary w-full flex items-center justify-center ${loading?"opacity-70 cursor-not-allowed": ""}`} style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}>
             {loading ? (
-              <div className="flex items-center justify-center">
-                <div>Connexion en cours&nbsp;</div>
-                <Loader2 size={16} className="animate-spin text-white" />
-              </div>
+              <Loader2 size={16} className="animate-spin text-white" />
             ) : (
               "Se connecter par Email"
             )}
@@ -121,4 +133,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage; 
+export default LoginPage;
