@@ -37,11 +37,10 @@ public class Client
     public string? Phone { get; set; }
     public string Status { get; set; } = "active";
 
-    // Calculated columns (generated always as) – Postgres syntax
     [Column(TypeName="numeric")]
-    public decimal TotalRevenue { get; private set; }
+    public decimal TotalRevenue { get; set; }
 
-    public int ProjectsCount { get; private set; }
+    public int ProjectsCount { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
@@ -63,10 +62,10 @@ public class Service
     [Column(TypeName="numeric")]
     public decimal UnitPrice { get; set; }
 
-    public string? Recurrence { get; set; } // null = non récurrent
-
+    public string? Recurrence { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    // Navigation
     public User? User { get; set; }
     public ICollection<InvoiceService> InvoiceServices { get; set; } = new List<InvoiceService>();
 }
@@ -76,25 +75,26 @@ public class Invoice
     [Key]
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
+    public Guid ClientId { get; set; }
 
     [Required]
     public string InvoiceNumber { get; set; } = null!;
 
-    public Guid ClientId { get; set; }
-    public DateTime DateIssued { get; set; }
-    public DateTime? DueDate { get; set; }
-    public string Status { get; set; } = "unpaid";
-
     [Column(TypeName="numeric")]
     public decimal TotalExclTax { get; set; }
+
     [Column(TypeName="numeric")]
     public decimal TotalInclTax { get; set; }
 
+    public string Status { get; set; } = "en attente";
+    public DateTime DateIssued { get; set; }
+    public DateTime? DueDate { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    // Navigation
     public User? User { get; set; }
     public Client? Client { get; set; }
-    public ICollection<InvoiceService> InvoiceServices { get; set; } = new List<InvoiceService>();
+    public ICollection<InvoiceService> Services { get; set; } = new List<InvoiceService>();
 }
 
 public class InvoiceService
@@ -103,13 +103,12 @@ public class InvoiceService
     public Guid Id { get; set; }
     public Guid InvoiceId { get; set; }
     public Guid ServiceId { get; set; }
-
     public int Quantity { get; set; }
-    [Column(TypeName="numeric")]
-    public decimal UnitPrice { get; set; }
-    [Column(TypeName="numeric")]
-    public decimal Subtotal { get; private set; }
 
+    [Column(TypeName="numeric")]
+    public decimal Subtotal { get; set; }
+
+    // Navigation
     public Invoice? Invoice { get; set; }
     public Service? Service { get; set; }
 }
@@ -119,11 +118,11 @@ public class Activity
     [Key]
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
-
-    public string Type { get; set; } = null!; // e.g. invoice_created
+    public string Type { get; set; } = null!;
     public Guid EntityId { get; set; }
     public string EntityName { get; set; } = null!;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    // Navigation
     public User? User { get; set; }
 } 

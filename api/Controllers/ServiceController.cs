@@ -24,7 +24,11 @@ public class ServiceController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ServiceDto>>> GetAllServices()
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null) return Unauthorized();
+
         var services = await _context.Services
+            .Where(s => s.UserId == Guid.Parse(userId))
             .AsNoTracking()
             .Select(s => new ServiceDto
             {
@@ -43,9 +47,12 @@ public class ServiceController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<ServiceDto>> GetServiceById(Guid id)
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null) return Unauthorized();
+
         var service = await _context.Services
             .AsNoTracking()
-            .Where(s => s.Id == id)
+            .Where(s => s.Id == id && s.UserId == Guid.Parse(userId))
             .Select(s => new ServiceDto
             {
                 Id = s.Id,
@@ -67,31 +74,18 @@ public class ServiceController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ServiceDto>> CreateService([FromBody] ServiceCreateDto dto)
     {
-        // Derive userId from JWT claims if not provided
-        Guid userId;
-        if (dto.UserId != Guid.Empty)
-        {
-            userId = dto.UserId;
-        }
-        else
-        {
-            var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (claim is null || !Guid.TryParse(claim, out userId))
-                return Unauthorized();
-        }
-
-        var user = await _context.Users.FindAsync(userId);
-        if (user is null)
-            return BadRequest("Invalid userId");
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null) return Unauthorized();
 
         var service = new Service
         {
             Id = Guid.NewGuid(),
-            UserId = userId,
+            UserId = Guid.Parse(userId),
             Name = dto.Name,
             Description = dto.Description,
             UnitPrice = dto.UnitPrice,
-            Recurrence = dto.Recurrence
+            Recurrence = dto.Recurrence,
+            CreatedAt = DateTime.UtcNow
         };
 
         await _context.Services.AddAsync(service);
@@ -114,7 +108,12 @@ public class ServiceController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateService(Guid id, [FromBody] ServiceUpdateDto dto)
     {
-        var service = await _context.Services.FindAsync(id);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null) return Unauthorized();
+
+        var service = await _context.Services
+            .FirstOrDefaultAsync(s => s.Id == id && s.UserId == Guid.Parse(userId));
+        
         if (service is null)
             return NotFound();
 
@@ -135,7 +134,12 @@ public class ServiceController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteService(Guid id)
     {
-        var service = await _context.Services.FindAsync(id);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null) return Unauthorized();
+
+        var service = await _context.Services
+            .FirstOrDefaultAsync(s => s.Id == id && s.UserId == Guid.Parse(userId));
+        
         if (service is null)
             return NotFound();
 

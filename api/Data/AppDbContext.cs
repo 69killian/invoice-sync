@@ -48,7 +48,7 @@ public class AppDbContext : DbContext
 
         builder.Entity<InvoiceService>()
             .HasOne(isvc => isvc.Invoice)
-            .WithMany(i => i.InvoiceServices)
+            .WithMany(i => i.Services)
             .HasForeignKey(isvc => isvc.InvoiceId);
 
         builder.Entity<InvoiceService>()

@@ -7,9 +7,12 @@ using Microsoft.EntityFrameworkCore;
 using api.Data;
 using api.DTOs;
 using api.Models;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace api.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class InvoiceController : ControllerBase
@@ -25,19 +28,32 @@ namespace api.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<InvoiceDto>>> GetAllInvoices()
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return Unauthorized();
+
             var invoices = await _context.Invoices
+                .Where(i => i.UserId == Guid.Parse(userId))
                 .Include(i => i.Client)
+                .Include(i => i.Services)
+                    .ThenInclude(s => s.Service)
                 .AsNoTracking()
                 .Select(i => new InvoiceDto
                 {
-                Id = i.Id,
-                InvoiceNumber = i.InvoiceNumber,
-                ClientName = i.Client.Name,
+                    Id = i.Id,
+                    InvoiceNumber = i.InvoiceNumber,
+                    ClientName = i.Client.Name,
                     TotalExclTax = i.TotalExclTax,
                     TotalInclTax = i.TotalInclTax,
-                Status = i.Status,
+                    Status = i.Status,
                     DateIssued = i.DateIssued,
-                DueDate = i.DueDate
+                    DueDate = i.DueDate,
+                    Services = i.Services.Select(s => new InvoiceServiceDto
+                    {
+                        ServiceId = s.ServiceId,
+                        ServiceName = s.Service.Name,
+                        UnitPrice = s.Service.UnitPrice,
+                        Quantity = s.Quantity
+                    }).ToList()
                 })
                 .ToListAsync();
 
@@ -48,10 +64,15 @@ namespace api.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<InvoiceDto>> GetInvoiceById(Guid id)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return Unauthorized();
+
             var invoice = await _context.Invoices
                 .Include(i => i.Client)
+                .Include(i => i.Services)
+                    .ThenInclude(s => s.Service)
                 .AsNoTracking()
-                .Where(i => i.Id == id)
+                .Where(i => i.Id == id && i.UserId == Guid.Parse(userId))
                 .Select(i => new InvoiceDto
                 {
                     Id = i.Id,
@@ -61,7 +82,14 @@ namespace api.Controllers
                     TotalInclTax = i.TotalInclTax,
                     Status = i.Status,
                     DateIssued = i.DateIssued,
-                    DueDate = i.DueDate
+                    DueDate = i.DueDate,
+                    Services = i.Services.Select(s => new InvoiceServiceDto
+                    {
+                        ServiceId = s.ServiceId,
+                        ServiceName = s.Service.Name,
+                        UnitPrice = s.Service.UnitPrice,
+                        Quantity = s.Quantity
+                    }).ToList()
                 })
                 .FirstOrDefaultAsync();
 
@@ -75,47 +103,54 @@ namespace api.Controllers
         [HttpPost]
         public async Task<ActionResult<InvoiceDto>> CreateInvoice([FromBody] InvoiceCreateDto dto)
         {
-            // Validate client
-            var client = await _context.Clients.FindAsync(dto.ClientId);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return Unauthorized();
+
+            // Verify client belongs to user
+            var client = await _context.Clients
+                .FirstOrDefaultAsync(c => c.Id == dto.ClientId && c.UserId == Guid.Parse(userId));
             if (client is null)
-                return BadRequest("Invalid clientId");
+                return BadRequest("Client not found or not authorized");
+
+            // Verify all services belong to user
+            var serviceIds = dto.Services.Select(s => s.ServiceId).ToList();
+            var services = await _context.Services
+                .Where(s => serviceIds.Contains(s.Id) && s.UserId == Guid.Parse(userId))
+                .ToListAsync();
+
+            if (services.Count != serviceIds.Count)
+                return BadRequest("One or more services not found or not authorized");
 
             var invoice = new Invoice
             {
                 Id = Guid.NewGuid(),
-                InvoiceNumber = dto.InvoiceNumber,
+                UserId = Guid.Parse(userId),
                 ClientId = dto.ClientId,
-                UserId = client.UserId, // assuming same owner
-                DateIssued = DateTime.SpecifyKind(dto.DateIssued, DateTimeKind.Utc),
-                DueDate = dto.DueDate.HasValue ? DateTime.SpecifyKind(dto.DueDate.Value, DateTimeKind.Utc) : null,
-                Status = "en attente"
+                InvoiceNumber = dto.InvoiceNumber,
+                Status = dto.Status,
+                DateIssued = dto.DateIssued.ToUniversalTime(),
+                DueDate = dto.DueDate?.ToUniversalTime(),
+                CreatedAt = DateTime.UtcNow
             };
 
-            decimal totalExcl = 0m;
+            // Calculate totals
+            decimal totalExclTax = 0;
             var invoiceServices = new List<InvoiceService>();
-
-            foreach (var item in dto.Services)
+            foreach (var svc in dto.Services)
             {
-                var service = await _context.Services.FindAsync(item.ServiceId);
-                if (service is null)
-                    return BadRequest($"Service {item.ServiceId} introuvable");
-
-                var subtotal = service.UnitPrice * item.Quantity;
-                totalExcl += subtotal;
-
+                var service = services.First(s => s.Id == svc.ServiceId);
+                totalExclTax += service.UnitPrice * svc.Quantity;
                 invoiceServices.Add(new InvoiceService
                 {
                     Id = Guid.NewGuid(),
                     InvoiceId = invoice.Id,
-                    ServiceId = item.ServiceId,
-                    Quantity = item.Quantity,
-                    UnitPrice = service.UnitPrice
+                    ServiceId = svc.ServiceId,
+                    Quantity = svc.Quantity
                 });
             }
 
-            invoice.TotalExclTax = totalExcl;
-            invoice.TotalInclTax = totalExcl * 1.2m; // TVA 20 %
-            invoice.InvoiceServices = invoiceServices;
+            invoice.TotalExclTax = totalExclTax;
+            invoice.TotalInclTax = totalExclTax * 1.2m; // 20% TVA
 
             await _context.Invoices.AddAsync(invoice);
             await _context.InvoiceServices.AddRangeAsync(invoiceServices);
@@ -130,7 +165,14 @@ namespace api.Controllers
                 TotalInclTax = invoice.TotalInclTax,
                 Status = invoice.Status,
                 DateIssued = invoice.DateIssued,
-                DueDate = invoice.DueDate
+                DueDate = invoice.DueDate,
+                Services = invoiceServices.Select(s => new InvoiceServiceDto
+                {
+                    ServiceId = s.ServiceId,
+                    ServiceName = services.First(svc => svc.Id == s.ServiceId).Name,
+                    UnitPrice = services.First(svc => svc.Id == s.ServiceId).UnitPrice,
+                    Quantity = s.Quantity
+                }).ToList()
             };
 
             return CreatedAtAction(nameof(GetInvoiceById), new { id = invoice.Id }, result);
@@ -140,56 +182,67 @@ namespace api.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateInvoice(Guid id, [FromBody] InvoiceUpdateDto dto)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return Unauthorized();
+
             var invoice = await _context.Invoices
-                .Include(i => i.InvoiceServices)
-                .FirstOrDefaultAsync(i => i.Id == id);
+                .Include(i => i.Services)
+                .FirstOrDefaultAsync(i => i.Id == id && i.UserId == Guid.Parse(userId));
 
             if (invoice is null)
                 return NotFound();
 
-            if (dto.InvoiceNumber is not null)
-                invoice.InvoiceNumber = dto.InvoiceNumber;
             if (dto.ClientId.HasValue)
-                invoice.ClientId = dto.ClientId.Value;
-            if (dto.DateIssued.HasValue)
-                invoice.DateIssued = DateTime.SpecifyKind(dto.DateIssued.Value, DateTimeKind.Utc);
-            if (dto.DueDate.HasValue)
-                invoice.DueDate = DateTime.SpecifyKind(dto.DueDate.Value, DateTimeKind.Utc);
-            if (dto.Status is not null)
-                invoice.Status = dto.Status;
-
-            if (dto.Services is not null)
             {
-                // Remove existing
-                _context.InvoiceServices.RemoveRange(invoice.InvoiceServices);
+                var client = await _context.Clients
+                    .FirstOrDefaultAsync(c => c.Id == dto.ClientId && c.UserId == Guid.Parse(userId));
+                if (client is null)
+                    return BadRequest("Client not found or not authorized");
+                invoice.ClientId = dto.ClientId.Value;
+            }
 
-                decimal totalExcl = 0m;
-                var newServices = new List<InvoiceService>();
+            if (dto.Services != null)
+            {
+                var serviceIds = dto.Services.Select(s => s.ServiceId).ToList();
+                var services = await _context.Services
+                    .Where(s => serviceIds.Contains(s.Id) && s.UserId == Guid.Parse(userId))
+                    .ToListAsync();
 
-                foreach (var item in dto.Services)
+                if (services.Count != serviceIds.Count)
+                    return BadRequest("One or more services not found or not authorized");
+
+                // Remove existing services
+                _context.InvoiceServices.RemoveRange(invoice.Services);
+
+                // Calculate new totals
+                decimal totalExclTax = 0;
+                var invoiceServices = new List<InvoiceService>();
+                foreach (var svc in dto.Services)
                 {
-                    var service = await _context.Services.FindAsync(item.ServiceId);
-                    if (service is null)
-                        return BadRequest($"Service {item.ServiceId} introuvable");
-
-                    var subtotal = service.UnitPrice * item.Quantity;
-                    totalExcl += subtotal;
-
-                    newServices.Add(new InvoiceService
+                    var service = services.First(s => s.Id == svc.ServiceId);
+                    totalExclTax += service.UnitPrice * svc.Quantity;
+                    invoiceServices.Add(new InvoiceService
                     {
                         Id = Guid.NewGuid(),
                         InvoiceId = invoice.Id,
-                        ServiceId = item.ServiceId,
-                        Quantity = item.Quantity,
-                        UnitPrice = service.UnitPrice
+                        ServiceId = svc.ServiceId,
+                        Quantity = svc.Quantity
                     });
                 }
 
-                invoice.TotalExclTax = totalExcl;
-                invoice.TotalInclTax = totalExcl * 1.2m;
-                invoice.InvoiceServices = newServices;
-                await _context.InvoiceServices.AddRangeAsync(newServices);
+                invoice.TotalExclTax = totalExclTax;
+                invoice.TotalInclTax = totalExclTax * 1.2m; // 20% TVA
+                await _context.InvoiceServices.AddRangeAsync(invoiceServices);
             }
+
+            if (dto.InvoiceNumber is not null)
+                invoice.InvoiceNumber = dto.InvoiceNumber;
+            if (dto.Status is not null)
+                invoice.Status = dto.Status;
+            if (dto.DateIssued.HasValue)
+                invoice.DateIssued = dto.DateIssued.Value.ToUniversalTime();
+            if (dto.DueDate.HasValue)
+                invoice.DueDate = dto.DueDate.Value.ToUniversalTime();
 
             await _context.SaveChangesAsync();
             return NoContent();
@@ -199,14 +252,20 @@ namespace api.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteInvoice(Guid id)
         {
-            var invoice = await _context.Invoices.FindAsync(id);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return Unauthorized();
+
+            var invoice = await _context.Invoices
+                .Include(i => i.Services)
+                .FirstOrDefaultAsync(i => i.Id == id && i.UserId == Guid.Parse(userId));
+
             if (invoice is null)
                 return NotFound();
 
-            var related = _context.InvoiceServices.Where(s => s.InvoiceId == id);
-            _context.InvoiceServices.RemoveRange(related);
+            _context.InvoiceServices.RemoveRange(invoice.Services);
             _context.Invoices.Remove(invoice);
             await _context.SaveChangesAsync();
+
             return NoContent();
         }
     }
