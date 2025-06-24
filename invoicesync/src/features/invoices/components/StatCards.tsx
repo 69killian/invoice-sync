@@ -11,15 +11,19 @@ import {
 interface StatCardsProps {
   totalInvoices?: string | number
   totalInvoicesTrend?: string
+  newInvoicesThisMonth?: string | number
   revenue?: string
   revenueTrend?: string
+  newRevenueThisMonth?: string
 }
 
 const StatCards: React.FC<StatCardsProps> = ({
   totalInvoices = 156,
-  totalInvoicesTrend = "+8.2%",
-  revenue = "€47,250",
-  revenueTrend = "+15.3%",
+  totalInvoicesTrend = "+0%",
+  newInvoicesThisMonth = 0,
+  revenue = "€0",
+  revenueTrend = "+0%",
+  newRevenueThisMonth = "€0",
 }) => (
   <div className="px-8 mb-6">
     <div className="grid gap-4 md:grid-cols-2">
@@ -29,7 +33,7 @@ const StatCards: React.FC<StatCardsProps> = ({
           <StatCardBadge trend="up">{totalInvoicesTrend}</StatCardBadge>
         </StatCardHeader>
         <StatCardValue>{totalInvoices}</StatCardValue>
-        <StatCardDescription>+12 ce mois-ci</StatCardDescription>
+        <StatCardDescription>+{newInvoicesThisMonth} ce mois-ci</StatCardDescription>
       </StatCard>
 
       <StatCard>
@@ -38,7 +42,7 @@ const StatCards: React.FC<StatCardsProps> = ({
           <StatCardBadge trend="up">{revenueTrend}</StatCardBadge>
         </StatCardHeader>
         <StatCardValue>{revenue}</StatCardValue>
-        <StatCardDescription>+€6,800 ce mois-ci</StatCardDescription>
+        <StatCardDescription>+{newRevenueThisMonth} ce mois-ci</StatCardDescription>
       </StatCard>
     </div>
   </div>

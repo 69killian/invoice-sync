@@ -1,20 +1,52 @@
 import React, { useState } from "react";
 import { X, ChevronDown } from "lucide-react";
+import { useForm, useFieldArray } from 'react-hook-form';
 import StatCards from "../components/StatCards"
 import InvoicesHeader from "../components/InvoicesHeader"
 import InvoicesSearchFilters from "../components/InvoicesSearchFilters"
 import InvoicesTable from "../components/InvoicesTable"
 import InvoiceDeleteModal from "../components/InvoiceDeleteModal"
+import { useInvoices, useCreateInvoice, useUpdateInvoice, useDeleteInvoice } from "../hooks/useInvoices";
+import type { Invoice, InvoiceCreate, InvoiceUpdate } from "../types";
+import { useClients } from "../../clients/hooks/useClients";
+import { useServices as useServicesList } from "../../services/hooks/useServices";
+import { useAuth } from "../../../contexts/AuthContext";
 
-const InvoiceView = () => {
-  const [selectedRows, setSelectedRows] = useState<number[]>([]);
-  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
-  const [openDropdown, setOpenDropdown] = useState<number | null>(null);
-  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+// pagination hook (reuse)
+const usePagination = (initial = 10) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(initial);
+
+  const getTotalPages = (total: number) => Math.ceil(total / itemsPerPage);
+  const getPaginated = <T,>(data: T[]): T[] => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return data.slice(start, start + itemsPerPage);
+  };
+
+  const changeItemsPerPage = (n: number) => {
+    setItemsPerPage(n);
+    setCurrentPage(1);
+  };
+
+  return {
+    currentPage,
+    itemsPerPage,
+    setCurrentPage,
+    setItemsPerPage: changeItemsPerPage,
+    getTotalPages,
+    getPaginated,
+  };
+};
+
+const InvoicesView = () => {
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [invoiceToDelete, setInvoiceToDelete] = useState<any>(null);
+  const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null);
   const [editForm, setEditForm] = useState({
     number: '',
     client: '',
@@ -23,70 +55,99 @@ const InvoiceView = () => {
     status: 'En attente',
     services: [{ serviceId: '', quantity: 1 }]
   });
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  
-  const invoices = [
-    { id: 1, number: "INV-2024-001", client: "Acme Corp", date: "2024-06-01", amount: "1,500€", status: "Payé" },
-    { id: 2, number: "INV-2024-002", client: "Beta SARL", date: "2024-06-02", amount: "2,800€", status: "En attente" },
-    { id: 3, number: "INV-2024-003", client: "Gamma SAS", date: "2024-06-03", amount: "3,200€", status: "Payé" },
-    { id: 4, number: "INV-2024-004", client: "Delta Ltd", date: "2024-06-04", amount: "950€", status: "En attente" },
-    { id: 5, number: "INV-2024-005", client: "Echo Inc", date: "2024-06-05", amount: "4,100€", status: "Payé" },
-  ];
+  const { data: clients = [] } = useClients();
+  const { data: services = [] } = useServicesList();
+  const { data: invoices = [], isLoading } = useInvoices();
+  const createMut = useCreateInvoice();
+  const updateMut = useUpdateInvoice();
+  const deleteMut = useDeleteInvoice();
 
-  const toggleRowSelection = (id: number) => {
-    setSelectedRows(prev => 
-      prev.includes(id) 
-        ? prev.filter(rowId => rowId !== id)
-        : [...prev, id]
-    );
+  // Search & filter state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+
+  const pagination = usePagination(10);
+
+  // Compute stats
+  const totalInvoicesCount = invoices.length;
+  const totalRevenueNumber = invoices.reduce((acc, inv) => acc + (inv.totalInclTax || 0), 0);
+  const totalRevenueFormatted = totalRevenueNumber.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+
+  // Monthly stats using ISO string slice to avoid timezone issues
+  const now = new Date();
+  const currentMonthKey = now.toISOString().slice(0, 7); // 'YYYY-MM'
+
+  // Build previous month key
+  const [currY, currM] = currentMonthKey.split('-').map(Number);
+  const prevDate = new Date(currY, currM - 1 - 1, 1); // subtract 1 for zero-index months then 1 more for previous
+  const prevMonthKey = prevDate.toISOString().slice(0, 7);
+
+  const invoicesThisMonth = invoices.filter(inv => inv.dateIssued.slice(0, 7) === currentMonthKey);
+  const invoicesPrevMonth = invoices.filter(inv => inv.dateIssued.slice(0, 7) === prevMonthKey);
+
+  const currentMonthInvoicesCount = invoicesThisMonth.length;
+  const prevMonthInvoicesCount = invoicesPrevMonth.length;
+
+  const currentMonthRevenueNumber = invoicesThisMonth.reduce((acc, inv) => acc + (inv.totalInclTax || 0), 0);
+  const prevMonthRevenueNumber = invoicesPrevMonth.reduce((acc, inv) => acc + (inv.totalInclTax || 0), 0);
+
+  const revenueThisMonthFormatted = currentMonthRevenueNumber.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
+
+  const calcTrend = (curr: number, prev: number) => {
+    if (prev === 0) {
+      if (curr === 0) return '0%';
+      return '+100%';
+    }
+    const diff = ((curr - prev) / prev) * 100;
+    const sign = diff >= 0 ? '+' : '-';
+    return `${sign}${Math.abs(diff).toFixed(1)}%`;
+  };
+
+  const invoicesTrendStr = calcTrend(currentMonthInvoicesCount, prevMonthInvoicesCount);
+  const revenueTrendStr = calcTrend(currentMonthRevenueNumber, prevMonthRevenueNumber);
+
+  // Apply client search / status filter before pagination
+  const filteredInvoices = invoices.filter((inv) => {
+    const matchesSearch = inv.clientName.toLowerCase().includes(searchTerm.toLowerCase());
+    if (!statusFilter) return matchesSearch;
+    const isPaid = inv.status.toLowerCase() === 'payé' || inv.status.toLowerCase() === 'paid';
+    return matchesSearch && (statusFilter === 'paid' ? isPaid : !isPaid);
+  });
+
+  const toggleRowSelection = (id: string) => {
+    setSelectedRows((prev) => (prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]));
   };
 
   const toggleAllRows = () => {
-    setSelectedRows(prev => 
-      prev.length === invoices.length 
+    setSelectedRows((prev) =>
+      prev.length === pagination.getPaginated(filteredInvoices).length
         ? []
-        : invoices.map(invoice => invoice.id)
+        : pagination.getPaginated(filteredInvoices).map((i) => i.id)
     );
   };
 
-  const toggleDropdown = (id: number) => {
-    setOpenDropdown(openDropdown === id ? null : id);
-  };
+  const toggleDropdown = (id: string) => setOpenDropdown(openDropdown === id ? null : id);
 
-  const openInvoicePanel = (invoice: any) => {
-    setSelectedInvoice(invoice);
+  const openPanelView = (inv: Invoice) => {
+    setSelectedInvoice(inv);
+    // Convert ISO date to YYYY-MM-DD format for date input
+    const dateIssued = new Date(inv.dateIssued);
+    const formattedDate = dateIssued.toISOString().split('T')[0];
     setEditForm({
-      number: invoice.number,
-      client: invoice.client,
-      date: invoice.date,
-      amount: invoice.amount,
-      status: invoice.status,
-      services: [{ serviceId: '', quantity: 1 }]
+      number: inv.invoiceNumber,
+      client: inv.clientName,
+      date: formattedDate,
+      amount: inv.totalInclTax.toString(),
+      status: inv.status,
+      services: inv.services?.map((s) => ({ serviceId: s.serviceId, quantity: s.quantity })) ?? [{ serviceId: '', quantity: 1 }],
     });
-    setIsEditing(false);
-    setOpenDropdown(null);
-  };
-
-  const openInvoicePanelInEditMode = (invoice: any) => {
-    setSelectedInvoice(invoice);
-    setEditForm({
-      number: invoice.number,
-      client: invoice.client,
-      date: invoice.date,
-      amount: invoice.amount,
-      status: invoice.status,
-      services: [{ serviceId: '', quantity: 1 }]
-    });
-    setIsEditing(true);
-    setOpenDropdown(null);
-  };
-
-  const closeInvoicePanel = () => {
-    setSelectedInvoice(null);
-    setIsEditing(false);
     setIsCreating(false);
+    setIsEditing(false);
+  };
+
+  const openPanelEdit = (inv: Invoice) => {
+    openPanelView(inv);
+    setIsEditing(true);
   };
 
   const openCreatePanel = () => {
@@ -103,8 +164,10 @@ const InvoiceView = () => {
     setIsEditing(false);
   };
 
-  const toggleEditMode = () => {
-    setIsEditing(!isEditing);
+  const closePanel = () => {
+    setSelectedInvoice(null);
+    setIsCreating(false);
+    setIsEditing(false);
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -137,56 +200,92 @@ const InvoiceView = () => {
     }));
   };
 
-  const handleSaveChanges = () => {
+  // Helper to convert the local form state to the API payload shape
+  const buildCreatePayload = (): InvoiceCreate => {
+    const client = clients.find((c) => c.name === editForm.client);
+    // Convert YYYY-MM-DD to ISO format with UTC time
+    const dateObj = new Date(editForm.date);
+    const utcDate = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
+    return {
+      invoiceNumber: editForm.number,
+      clientId: client?.id || '',
+      dateIssued: utcDate.toISOString(),
+      services: editForm.services,
+    };
+  };
+
+  const buildUpdatePayload = (): InvoiceUpdate => {
+    const client = clients.find((c) => c.name === editForm.client);
+    // Convert YYYY-MM-DD to ISO format with UTC time
+    const dateObj = new Date(editForm.date);
+    const utcDate = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
+    
+    console.log('Current form state:', editForm);
+    console.log('Original invoice:', selectedInvoice);
+    console.log('Found client:', client);
+    
+    const payload: InvoiceUpdate = {};
+    
+    // Only include properties that have changed and are valid
+    if (editForm.number && editForm.number !== selectedInvoice?.invoiceNumber) {
+      payload.invoiceNumber = editForm.number;
+    }
+    
+    // Only include client if it exists and has changed
+    if (client?.id && editForm.client !== selectedInvoice?.clientName) {
+      payload.clientId = client.id;
+    }
+    
+    // Only include date if it's valid
+    if (editForm.date && editForm.date !== selectedInvoice?.dateIssued) {
+      payload.dateIssued = utcDate.toISOString();
+    }
+    
+    // Only include status if it's changed
+    if (editForm.status && editForm.status !== selectedInvoice?.status) {
+      payload.status = editForm.status;
+    }
+    
+    // Only include services if they've changed and are valid
+    if (editForm.services?.length > 0 && 
+        editForm.services.every(s => s.serviceId && s.quantity > 0) &&
+        JSON.stringify(editForm.services) !== JSON.stringify(selectedInvoice?.services)) {
+      payload.services = editForm.services;
+    }
+    
+    console.log('Final update payload:', payload);
+    return payload;
+  };
+
+  const handleSave = () => {
     if (isCreating) {
-      // Here you would typically save the new invoice to your backend
-      console.log('Creating new invoice:', editForm);
-      setIsCreating(false);
-    } else {
-      // Here you would typically save the changes to your backend
-      console.log('Saving changes:', editForm);
-      setIsEditing(false);
-      // Update the selectedInvoice with new values
-      setSelectedInvoice({
-        ...selectedInvoice,
-        ...editForm
-      });
+      createMut.mutate(buildCreatePayload(), { onSuccess: closePanel });
+    } else if (selectedInvoice) {
+      const payload = buildUpdatePayload();
+      console.log('Update payload:', payload);
+      updateMut.mutate(
+        { id: selectedInvoice.id, payload },
+        { onSuccess: () => setIsEditing(false) }
+      );
     }
   };
 
-  const openDeleteModal = (invoice: any) => {
-    setInvoiceToDelete(invoice);
+  const openDelete = (inv: Invoice) => {
+    setInvoiceToDelete(inv);
     setShowDeleteModal(true);
     setOpenDropdown(null);
   };
 
-  const closeDeleteModal = () => {
+  const closeDelete = () => {
     setShowDeleteModal(false);
     setInvoiceToDelete(null);
   };
 
   const confirmDelete = () => {
-    // Here you would typically delete the invoice from your backend
-    console.log('Deleting invoice:', invoiceToDelete);
-    closeDeleteModal();
+    if (invoiceToDelete) deleteMut.mutate(invoiceToDelete.id, { onSuccess: closeDelete });
   };
 
-  // Available services for selection
-  const availableServices = [
-    { id: 'service1', name: 'Prestation 1', price: 150 },
-    { id: 'service2', name: 'Prestation 2', price: 200 },
-    { id: 'service3', name: 'Prestation 3', price: 300 },
-    { id: 'service4', name: 'Prestation 4', price: 250 },
-  ];
-
-  // Available clients for selection
-  const availableClients = [
-    { id: 'client1', name: 'Client 1' },
-    { id: 'client2', name: 'Client 2' },
-    { id: 'client3', name: 'Client 3' },
-    { id: 'client4', name: 'Client 4' },
-    { id: 'client5', name: 'Client 5' },
-  ];
+  if (isLoading) return <div className="p-8 text-center">Chargement...</div>;
 
   return (
     <div className="relative">
@@ -196,28 +295,40 @@ const InvoiceView = () => {
         <InvoicesHeader onCreateClick={openCreatePanel} />
 
         {/* Statistics Cards */}
-        <StatCards />
+        <StatCards
+          totalInvoices={totalInvoicesCount}
+          totalInvoicesTrend={invoicesTrendStr}
+          newInvoicesThisMonth={currentMonthInvoicesCount}
+          revenue={totalRevenueFormatted}
+          revenueTrend={revenueTrendStr}
+          newRevenueThisMonth={revenueThisMonthFormatted}
+        />
 
         {/* Search and Filters */}
-        <InvoicesSearchFilters />
+        <InvoicesSearchFilters
+          searchTerm={searchTerm}
+          statusFilter={statusFilter}
+          onSearchTermChange={setSearchTerm}
+          onStatusFilterChange={setStatusFilter}
+        />
 
         <div className="space-y-6 py-4 px-8">
           <InvoicesTable
-            invoices={invoices}
+            invoices={pagination.getPaginated(filteredInvoices)}
             selectedRows={selectedRows}
             hoveredRow={hoveredRow}
             openDropdown={openDropdown}
-            itemsPerPage={itemsPerPage}
-            currentPage={currentPage}
-            totalPages={totalPages}
+            itemsPerPage={pagination.itemsPerPage}
+            currentPage={pagination.currentPage}
+            totalPages={pagination.getTotalPages(filteredInvoices.length)}
             onToggleRowSelection={toggleRowSelection}
             onToggleAllRows={toggleAllRows}
             onToggleDropdown={toggleDropdown}
-            onOpenPanelView={openInvoicePanel}
-            onOpenPanelEdit={openInvoicePanelInEditMode}
-            onOpenDeleteModal={openDeleteModal}
-            onSetItemsPerPage={setItemsPerPage}
-            onSetCurrentPage={setCurrentPage}
+            onOpenPanelView={openPanelView}
+            onOpenPanelEdit={openPanelEdit}
+            onOpenDeleteModal={openDelete}
+            onSetItemsPerPage={pagination.setItemsPerPage}
+            onSetCurrentPage={pagination.setCurrentPage}
           />
         </div>
       </div>
@@ -228,7 +339,7 @@ const InvoiceView = () => {
           {/* Dark Overlay */}
           <div 
             className="fixed inset-0 bg-black bg-opacity-40 animate-fadeInBlur"
-            onClick={closeInvoicePanel}
+            onClick={closePanel}
             style={{
               position: 'fixed', 
               top: 0, 
@@ -250,10 +361,10 @@ const InvoiceView = () => {
             <div className="p-6 border-b border-border">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-medium" style={{color: 'white', fontFamily: 'Bricolage Grotesque, sans-serif'}}>
-                  {isCreating ? 'Nouvelle Facture' : 'Invoice'}
+                  {isCreating ? 'Nouvelle Facture' : isEditing ? 'Modifier la facture' : 'Facture'}
                 </h2>
                 <button 
-                  onClick={closeInvoicePanel}
+                  onClick={closePanel}
                   className=" text-xs rounded-non transition-colors flex items-center justify-center border"
                   style={{
                     backgroundColor: 'white',
@@ -265,16 +376,16 @@ const InvoiceView = () => {
                   <X size={14} />
                 </button>
               </div>
-              {!isCreating && (
+              {!isCreating && !isEditing && selectedInvoice && (
                 <>
                   <div className="mt-2 text-sm text-muted-foreground">
-                    Invoice No: {selectedInvoice.number}
+                    Invoice No: {selectedInvoice.invoiceNumber}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    Issue date: {selectedInvoice.date}
+                    Issue date: {new Date(selectedInvoice.dateIssued).toLocaleDateString('fr-FR')}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    Due date: {selectedInvoice.date}
+                    Due date: {selectedInvoice.dueDate ? new Date(selectedInvoice.dueDate).toLocaleDateString('fr-FR') : 'N/A'}
                   </div>
                 </>
               )}
@@ -298,7 +409,7 @@ const InvoiceView = () => {
                       <div>
                         <h3 className="text-sm font-medium text-muted-foreground mb-2">To</h3>
                         <div className="text-sm text-foreground">
-                          <div>{selectedInvoice.client}</div>
+                          <div>{selectedInvoice?.clientName}</div>
                           <div>client@company.com</div>
                           <div>456 Client Avenue</div>
                           <div>Lyon, France</div>
@@ -316,25 +427,35 @@ const InvoiceView = () => {
                           <div className="text-xs font-medium text-muted-foreground">Total</div>
                         </div>
                         <div className="grid grid-cols-4 gap-4 p-3">
-                          <div className="text-sm text-foreground">Service de développement</div>
-                          <div className="text-sm text-foreground">1</div>
-                          <div className="text-sm text-foreground">{selectedInvoice.amount}</div>
-                          <div className="text-sm text-foreground">{selectedInvoice.amount}</div>
+                          {selectedInvoice?.services?.map((service, index) => (
+                            <div key={index} className="grid grid-cols-4 gap-4 p-3">
+                              <div className="text-sm text-foreground">{service.serviceName}</div>
+                              <div className="text-sm text-foreground">{service.quantity}</div>
+                              <div className="text-sm text-foreground">{service.price?.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</div>
+                              <div className="text-sm text-foreground">{service.total?.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                       
                       <div className="mt-4 space-y-2">
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Subtotal</span>
-                          <span className="text-foreground">{selectedInvoice.amount}</span>
+                          <span className="text-foreground">
+                            {selectedInvoice ? selectedInvoice.totalInclTax.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) : '€0'}
+                          </span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">VAT (20%)</span>
-                          <span className="text-foreground">€{(parseFloat(selectedInvoice.amount.replace('€', '').replace(',', '')) * 0.2).toFixed(0)}</span>
+                          <span className="text-foreground">
+                            €{(((selectedInvoice?.totalInclTax ?? 0) * 0.2)).toFixed(0)}
+                          </span>
                         </div>
                         <div className="flex justify-between text-lg font-semibold border-t border-border pt-2">
                           <span style={{color: 'white'}}>Total</span>
-                          <span style={{color: 'white'}}>€{(parseFloat(selectedInvoice.amount.replace('€', '').replace(',', '')) * 1.2).toFixed(0)}</span>
+                          <span style={{color: 'white'}}>
+                            €{(((selectedInvoice?.totalInclTax ?? 0) * 1.2)).toFixed(0)}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -407,7 +528,7 @@ const InvoiceView = () => {
                           className="w-full bg-background border border-border text-xs px-3 py-2 rounded-none text-foreground focus:outline-none focus:ring-1 focus:ring-primary mt-1"
                         >
                           <option value="">Sélectionner un client</option>
-                          {availableClients.map(client => (
+                          {clients.map(client => (
                             <option key={client.id} value={client.name}>{client.name}</option>
                           ))}
                         </select>
@@ -466,7 +587,7 @@ const InvoiceView = () => {
                               className="bg-background border border-border text-xs px-2 py-1 rounded-none text-foreground"
                             >
                               <option value="">Sélectionner</option>
-                              {availableServices.map(svc => (
+                              {services.map(svc => (
                                 <option key={svc.id} value={svc.id}>{svc.name}</option>
                               ))}
                             </select>
@@ -492,7 +613,7 @@ const InvoiceView = () => {
 
                       <div className="flex gap-2 pt-4">
                         <button 
-                          onClick={handleSaveChanges}
+                          onClick={handleSave}
                           className="flex-1 px-3 py-2 text-xs rounded-none transition-colors border"
                           style={{
                             backgroundColor: 'white',
@@ -504,7 +625,7 @@ const InvoiceView = () => {
                           {isCreating ? 'Créer' : 'Sauvegarder'}
                         </button>
                         <button 
-                          onClick={isCreating ? closeInvoicePanel : toggleEditMode}
+                          onClick={closePanel}
                           className="flex-1 px-3 py-2 text-xs rounded-none transition-colors border"
                           style={{
                             backgroundColor: 'transparent',
@@ -525,7 +646,7 @@ const InvoiceView = () => {
             {!isCreating && (
               <div className="absolute px-6 py-2">
                 <button 
-                  onClick={toggleEditMode}
+                  onClick={() => setIsEditing(!isEditing)}
                   className="px-3 py-1 text-xs rounded-none transition-colors flex items-center gap-2 border"
                   style={{
                     backgroundColor: 'white',
@@ -546,11 +667,11 @@ const InvoiceView = () => {
       <InvoiceDeleteModal
         open={showDeleteModal && Boolean(invoiceToDelete)}
         invoice={invoiceToDelete}
-        onClose={closeDeleteModal}
+        onClose={closeDelete}
         onConfirm={confirmDelete}
       />
     </div>
   );
 };
 
-export default InvoiceView; 
+export default InvoicesView; 

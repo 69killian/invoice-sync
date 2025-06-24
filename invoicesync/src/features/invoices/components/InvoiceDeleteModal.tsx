@@ -13,10 +13,11 @@ import {
   DeleteModalCancelButton,
   DeleteModalConfirmButton,
 } from "../../../components/ui/delete-modal"
+import type { Invoice } from '../types';
 
 type InvoiceDeleteModalProps = {
   open: boolean
-  invoice: any | null
+  invoice: Invoice | null
   onClose: () => void
   onConfirm: () => void
 }
@@ -44,7 +45,7 @@ const InvoiceDeleteModal: React.FC<InvoiceDeleteModalProps> = ({ open, invoice, 
             </div>
             <DeleteModalDescription>
               <p className="text-sm text-foreground">
-                Êtes-vous sûr de vouloir supprimer la facture <strong>"{invoice.number}"</strong> ?
+                Êtes-vous sûr de vouloir supprimer la facture <strong>"{invoice.invoiceNumber}"</strong> ?
               </p>
               <p className="text-xs text-muted-foreground mt-2">Cette facture sera définitivement supprimée ainsi que toutes ses données associées.</p>
             </DeleteModalDescription>

@@ -86,9 +86,9 @@ namespace api.Controllers
                 InvoiceNumber = dto.InvoiceNumber,
                 ClientId = dto.ClientId,
                 UserId = client.UserId, // assuming same owner
-                DateIssued = dto.DateIssued,
-                DueDate = dto.DueDate,
-                Status = "unpaid"
+                DateIssued = DateTime.SpecifyKind(dto.DateIssued, DateTimeKind.Utc),
+                DueDate = dto.DueDate.HasValue ? DateTime.SpecifyKind(dto.DueDate.Value, DateTimeKind.Utc) : null,
+                Status = "en attente"
             };
 
             decimal totalExcl = 0m;
@@ -152,9 +152,9 @@ namespace api.Controllers
             if (dto.ClientId.HasValue)
                 invoice.ClientId = dto.ClientId.Value;
             if (dto.DateIssued.HasValue)
-                invoice.DateIssued = dto.DateIssued.Value;
+                invoice.DateIssued = DateTime.SpecifyKind(dto.DateIssued.Value, DateTimeKind.Utc);
             if (dto.DueDate.HasValue)
-                invoice.DueDate = dto.DueDate.Value;
+                invoice.DueDate = DateTime.SpecifyKind(dto.DueDate.Value, DateTimeKind.Utc);
             if (dto.Status is not null)
                 invoice.Status = dto.Status;
 

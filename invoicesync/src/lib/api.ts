@@ -1,5 +1,6 @@
 import { Client, ClientCreate, ClientUpdate } from '../features/clients/types';
 import { Service, ServiceCreate, ServiceUpdate } from '../features/services/types';
+import { Invoice, InvoiceCreate, InvoiceUpdate } from '../features/invoices/types';
 
 // URL de base de l'API : on privilégie la variable d'environnement, sinon fallback vers le port exposé par launchSettings.json
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5081/api";
@@ -68,4 +69,12 @@ export const serviceAPI = {
   create: (payload: ServiceCreate) => post<Service>('/service', payload),
   update: (id: string, payload: ServiceUpdate) => put(`/service/${id}`, payload),
   remove: (id: string) => del(`/service/${id}`),
+};
+
+export const invoiceAPI = {
+  list: () => get<Invoice[]>('/invoice'),
+  get: (id: string) => get<Invoice>(`/invoice/${id}`),
+  create: (payload: InvoiceCreate) => post<Invoice>('/invoice', payload),
+  update: (id: string, payload: InvoiceUpdate) => put(`/invoice/${id}`, payload),
+  remove: (id: string) => del(`/invoice/${id}`),
 }; 

@@ -20,21 +20,22 @@ import {
   TableCell,
   TableContainer,
 } from "../../../components/ui/table"
+import type { Invoice } from '../types'
 
 interface InvoicesTableProps {
-  invoices: any[]
-  selectedRows: number[]
-  hoveredRow: number | null
-  openDropdown: number | null
+  invoices: Invoice[]
+  selectedRows: string[]
+  hoveredRow: string | null
+  openDropdown: string | null
   itemsPerPage: number
   currentPage: number
   totalPages: number
-  onToggleRowSelection: (id: number) => void
+  onToggleRowSelection: (id: string) => void
   onToggleAllRows: () => void
-  onToggleDropdown: (id: number) => void
-  onOpenPanelView: (invoice: any) => void
-  onOpenPanelEdit: (invoice: any) => void
-  onOpenDeleteModal: (invoice: any) => void
+  onToggleDropdown: (id: string) => void
+  onOpenPanelView: (invoice: Invoice) => void
+  onOpenPanelEdit: (invoice: Invoice) => void
+  onOpenDeleteModal: (invoice: Invoice) => void
   onSetItemsPerPage: (val: number) => void
   onSetCurrentPage: (val: number) => void
 }
@@ -84,17 +85,17 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
               <TableCell>
                 <div className="flex items-center gap-3">
                   <GripVertical size={16} className="text-muted-foreground" />
-                  <span className="text-sm font-nomal text-foreground">{inv.number}</span>
+                  <span className="text-sm font-nomal text-foreground">{inv.invoiceNumber}</span>
                 </div>
               </TableCell>
               <TableCell>
-                <span className="text-sm font-thin text-foreground">{inv.client}</span>
+                <span className="text-sm font-thin text-foreground">{inv.clientName}</span>
               </TableCell>
               <TableCell>
-                <span className="text-sm font-thin text-foreground">{inv.date}</span>
+                <span className="text-sm font-thin text-foreground">{new Date(inv.dateIssued).toLocaleDateString('fr-FR')}</span>
               </TableCell>
               <TableCell>
-                <span className="text-sm font-thin text-foreground">{inv.amount}</span>
+                <span className="text-sm font-thin text-foreground">{inv.totalInclTax.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</span>
               </TableCell>
               <TableCell>
                 <span className="text-sm font-thin text-foreground">{inv.status}</span>

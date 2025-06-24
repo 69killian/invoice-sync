@@ -3,9 +3,12 @@ using Microsoft.EntityFrameworkCore;
 using api.Data;
 using api.DTOs;
 using api.Models;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace api.Controllers;
 
+[Authorize]
 [Route("api/[controller]")]
 [ApiController]
 public class ServiceController : ControllerBase
@@ -64,14 +67,27 @@ public class ServiceController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ServiceDto>> CreateService([FromBody] ServiceCreateDto dto)
     {
-        var user = await _context.Users.FindAsync(dto.UserId);
+        // Derive userId from JWT claims if not provided
+        Guid userId;
+        if (dto.UserId != Guid.Empty)
+        {
+            userId = dto.UserId;
+        }
+        else
+        {
+            var claim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (claim is null || !Guid.TryParse(claim, out userId))
+                return Unauthorized();
+        }
+
+        var user = await _context.Users.FindAsync(userId);
         if (user is null)
             return BadRequest("Invalid userId");
 
         var service = new Service
         {
             Id = Guid.NewGuid(),
-            UserId = dto.UserId,
+            UserId = userId,
             Name = dto.Name,
             Description = dto.Description,
             UnitPrice = dto.UnitPrice,

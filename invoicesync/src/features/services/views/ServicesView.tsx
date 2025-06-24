@@ -132,7 +132,9 @@ const ServicesView = () => {
 
   const onSubmit = handleSubmit((data: ServiceCreate | ServiceUpdate) => {
     if (isCreating) {
-      const payload: ServiceCreate = { ...data, userId: user?.id } as ServiceCreate;
+      const { userId, ...rest } = data as ServiceCreate; // ignore any userId
+      const payload: ServiceCreate = { ...rest } as ServiceCreate;
+      console.log('CREATE SERVICE payload:', payload);
       createMut.mutate(payload, { onSuccess: () => { setIsCreating(false); reset(); } });
     } else if (selectedService) {
       updateMut.mutate({ id: selectedService!.id, payload: data as ServiceUpdate }, { onSuccess: () => setIsEditing(false) });
