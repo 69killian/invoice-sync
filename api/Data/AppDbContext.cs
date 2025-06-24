@@ -1,5 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using api.Models;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace api.Data;
 
@@ -78,5 +81,87 @@ public class AppDbContext : DbContext
         //        builder.Entity<Invoice>()
         //            .Property(i => i.TotalInclTax)
         //            .HasComputedColumnSql("(\"TotalExclTax\" * 1.2)", stored: true);
+    }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        AddAuditEntries();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        AddAuditEntries();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    private void AddAuditEntries()
+    {
+        ChangeTracker.DetectChanges();
+        var auditEntries = new List<Activity>();
+
+        foreach (var entry in ChangeTracker.Entries())
+        {
+            if (entry.Entity is Activity || entry.State == EntityState.Detached || entry.State == EntityState.Unchanged)
+                continue;
+
+            string? entityName = null;
+            Guid userId = Guid.Empty;
+            Guid entityId;
+            string typePrefix = null!;
+
+            switch (entry.Entity)
+            {
+                case Invoice invoice:
+                    entityName = invoice.InvoiceNumber;
+                    userId = invoice.UserId;
+                    entityId = invoice.Id;
+                    typePrefix = "invoice";
+                    break;
+                case Client client:
+                    entityName = client.Name;
+                    userId = client.UserId;
+                    entityId = client.Id;
+                    typePrefix = "client";
+                    break;
+                case Service service:
+                    entityName = service.Name;
+                    userId = service.UserId;
+                    entityId = service.Id;
+                    typePrefix = "service";
+                    break;
+                case User user:
+                    entityName = user.Email;
+                    userId = user.Id;
+                    entityId = user.Id;
+                    typePrefix = "user";
+                    break;
+                default:
+                    continue; // ignore other entities
+            }
+
+            string action = entry.State switch
+            {
+                EntityState.Added => "created",
+                EntityState.Modified => "updated",
+                EntityState.Deleted => "deleted",
+                _ => "unknown"
+            };
+
+            auditEntries.Add(new Activity
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                Type = $"{typePrefix}_{action}",
+                EntityId = entityId,
+                EntityName = entityName ?? typePrefix,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
+        if (auditEntries.Count > 0)
+        {
+            Activities.AddRange(auditEntries);
+        }
     }
 } 

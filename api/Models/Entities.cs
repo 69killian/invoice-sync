@@ -86,9 +86,9 @@ public class Invoice
     public string Status { get; set; } = "unpaid";
 
     [Column(TypeName="numeric")]
-    public decimal TotalExclTax { get; private set; }
+    public decimal TotalExclTax { get; set; }
     [Column(TypeName="numeric")]
-    public decimal TotalInclTax { get; private set; }
+    public decimal TotalInclTax { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
