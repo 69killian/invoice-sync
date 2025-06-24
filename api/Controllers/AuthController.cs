@@ -58,7 +58,7 @@ namespace api.Controllers
         public IActionResult Logout()
         {
             Response.Cookies.Delete("Auth");
-            return Ok();
+            return NoContent();
         }
 
         [Authorize]

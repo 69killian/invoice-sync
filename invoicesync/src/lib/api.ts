@@ -23,10 +23,16 @@ export async function apiFetch<T>(endpoint: string, options: RequestInit & { bod
     throw new Error(text || res.statusText);
   }
 
-  // 204 No Content
+  // Pas de contenu
   if (res.status === 204) return {} as T;
 
-  return res.json() as Promise<T>;
+  const contentType = res.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) {
+    // S'il y a bien du JSON on le parse
+    return res.json() as Promise<T>;
+  }
+  // Sinon, on retourne un objet vide / texte brut
+  return {} as T;
 }
 
 export function post<T>(endpoint: string, body?: any) {
