@@ -1,5 +1,5 @@
 import * as React from "react"
-import { X, Trash2 } from "lucide-react"
+import { X, Trash2, Loader2, AlertCircle } from "lucide-react"
 
 interface DeleteAccountFinalModalProps {
   open: boolean
@@ -7,10 +7,23 @@ interface DeleteAccountFinalModalProps {
   onConfirmationTextChange: (val: string) => void
   onCancel: () => void
   onConfirm: () => void
+  isDeleting: boolean
+  error?: string
 }
 
-const DeleteAccountFinalModal: React.FC<DeleteAccountFinalModalProps> = ({ open, confirmationText, onConfirmationTextChange, onCancel, onConfirm }) => {
-  if (!open) return null
+const DeleteAccountFinalModal: React.FC<DeleteAccountFinalModalProps> = ({ 
+  open, 
+  confirmationText, 
+  onConfirmationTextChange, 
+  onCancel, 
+  onConfirm,
+  isDeleting,
+  error
+}) => {
+  if (!open) return null;
+  
+  const isConfirmed = confirmationText === 'SUPPRIMER MON COMPTE';
+  
   return (
     <>
       {/* Overlay */}
@@ -31,7 +44,11 @@ const DeleteAccountFinalModal: React.FC<DeleteAccountFinalModalProps> = ({ open,
               <h2 className="text-lg font-medium" style={{ color: 'white', fontFamily: 'Bricolage Grotesque, sans-serif' }}>
                 Confirmation finale
               </h2>
-              <button onClick={onCancel} className="text-muted-foreground hover:text-foreground">
+              <button 
+                onClick={onCancel} 
+                className="text-muted-foreground hover:text-foreground"
+                disabled={isDeleting}
+              >
                 <X size={16} />
               </button>
             </div>
@@ -47,10 +64,17 @@ const DeleteAccountFinalModal: React.FC<DeleteAccountFinalModalProps> = ({ open,
                   Dernière étape
                 </h3>
                 <p className="text-xs text-muted-foreground mt-1" style={{ color: '#9ca3af' }}>
-                  Tapez la phrase de confirmation
+                  Cette action est irréversible
                 </p>
               </div>
             </div>
+
+            {error && (
+              <div className="bg-red-900/20 border border-red-500 p-4 rounded-none flex items-center gap-2">
+                <AlertCircle size={16} className="text-red-500 shrink-0" />
+                <span className="text-sm text-red-500">{error}</span>
+              </div>
+            )}
 
             <div className="bg-red-50 border border-red-200 p-4 rounded-none">
               <p className="text-sm text-red-800 mb-3" style={{ color: 'white' }}>
@@ -72,24 +96,33 @@ const DeleteAccountFinalModal: React.FC<DeleteAccountFinalModalProps> = ({ open,
                 className="w-full bg-background border border-border text-xs px-3 py-2 rounded-none text-foreground focus:outline-none focus:ring-1 focus:ring-red-500"
                 placeholder="Tapez la phrase exacte..."
                 style={{ color: 'white' }}
+                disabled={isDeleting}
               />
             </div>
 
             <div className="flex gap-3 pt-4">
               <button
                 onClick={onCancel}
-                className="flex-1 px-4 py-2 text-xs rounded-none transition-colors border"
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 text-xs rounded-none transition-colors border disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ backgroundColor: 'transparent', color: 'white', fontFamily: 'Bricolage Grotesque, sans-serif', border: '1px solid #374151' }}
               >
                 Annuler
               </button>
               <button
                 onClick={onConfirm}
-                disabled={confirmationText !== 'SUPPRIMER MON COMPTE'}
-                className="flex-1 px-4 py-2 text-xs rounded-none transition-colors border disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!isConfirmed || isDeleting}
+                className="flex-1 px-4 py-2 text-xs rounded-none transition-colors border disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 style={{ backgroundColor: '#ef4444', color: 'white', fontFamily: 'Bricolage Grotesque, sans-serif', border: '1px solid #ef4444' }}
               >
-                Supprimer définitivement
+                {isDeleting ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    Suppression...
+                  </>
+                ) : (
+                  'Supprimer définitivement'
+                )}
               </button>
             </div>
           </div>

@@ -4,6 +4,7 @@ using api.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.AspNetCore.CookiePolicy;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,12 +36,32 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.SecretKey))
         };
 
-        // Read token from cookie named "Auth"
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
             {
                 context.Token = context.Request.Cookies["Auth"];
+                Console.WriteLine($"JWT OnMessageReceived - Cookie present: {context.Request.Cookies.ContainsKey("Auth")}");
+                Console.WriteLine($"JWT OnMessageReceived - Token extracted: {context.Token != null}");
+                return Task.CompletedTask;
+            },
+            OnAuthenticationFailed = context =>
+            {
+                Console.WriteLine($"JWT Authentication failed: {context.Exception}");
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                Console.WriteLine("JWT Token successfully validated");
+                if (context.Principal?.Claims != null)
+                {
+                    var claims = context.Principal.Claims.Select(c => $"{c.Type}: {c.Value}").ToList();
+                    Console.WriteLine($"Claims: {string.Join(", ", claims)}");
+                }
+                else
+                {
+                    Console.WriteLine("No claims found in the token");
+                }
                 return Task.CompletedTask;
             }
         };
@@ -64,6 +85,14 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Add cookie policy configuration
+builder.Services.Configure<CookiePolicyOptions>(options =>
+{
+    options.MinimumSameSitePolicy = SameSiteMode.None;
+    options.Secure = CookieSecurePolicy.Always;
+    options.HttpOnly = HttpOnlyPolicy.Always;
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -74,6 +103,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Add cookie policy middleware before CORS
+app.UseCookiePolicy();
 
 app.UseCors("FrontendDev");
 

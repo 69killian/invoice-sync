@@ -30,6 +30,8 @@ namespace api.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginRequest req)
         {
+            Console.WriteLine($"Login attempt for email: {req.Email}");
+            
             if (string.IsNullOrWhiteSpace(req.Email))
                 return BadRequest("Email requis");
 
@@ -37,6 +39,7 @@ namespace api.Controllers
             var user = _db.Users.FirstOrDefault(u => u.Email == email);
             if (user is null)
             {
+                Console.WriteLine($"Creating new user for email: {email}");
                 user = new User
                 {
                     Id = Guid.NewGuid(),
@@ -48,7 +51,13 @@ namespace api.Controllers
             }
 
             var token = GenerateJwt(user);
+            Console.WriteLine($"Generated JWT token length: {token.Length}");
             WriteCookie(token);
+            Console.WriteLine("Cookie written to response");
+
+            var setCookie = Response.Headers["Set-Cookie"].ToString();
+            Console.WriteLine($"Set-Cookie header: {setCookie}");
+            Console.WriteLine($"Cookie settings: HttpOnly={setCookie.Contains("HttpOnly")}, Secure={setCookie.Contains("Secure")}, SameSite={setCookie.Contains("SameSite=None")}");
 
             return Ok(new { user.Id, user.Email });
         }
@@ -65,8 +74,20 @@ namespace api.Controllers
         [HttpGet("me")]
         public IActionResult Me()
         {
-            var email = User.FindFirstValue(JwtRegisteredClaimNames.Email);
-            var idStr = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+            Console.WriteLine("ME endpoint called");
+            Console.WriteLine($"Auth cookie present: {Request.Cookies.ContainsKey("Auth")}");
+            if (Request.Cookies.TryGetValue("Auth", out var authCookie))
+            {
+                Console.WriteLine($"Auth cookie value length: {authCookie.Length}");
+            }
+            Console.WriteLine($"Authorization header present: {Request.Headers.ContainsKey("Authorization")}");
+            
+            var email = User.FindFirstValue(ClaimTypes.Email);
+            var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            
+            Console.WriteLine($"Claims found - Email: {email != null}, Id: {idStr != null}");
+            Console.WriteLine($"Email value: {email}, Id value: {idStr}");
+            
             return Ok(new { Id = idStr, Email = email });
         }
 
@@ -78,8 +99,8 @@ namespace api.Controllers
 
             var claims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Sub, u.Id.ToString()),
-                new Claim(JwtRegisteredClaimNames.Email, u.Email)
+                new Claim(ClaimTypes.NameIdentifier, u.Id.ToString()),
+                new Claim(ClaimTypes.Email, u.Email)
             };
 
             var token = new JwtSecurityToken(
@@ -94,13 +115,21 @@ namespace api.Controllers
 
         private void WriteCookie(string jwt)
         {
-            Response.Cookies.Append("Auth", jwt, new CookieOptions
+            var cookieOptions = new CookieOptions
             {
                 HttpOnly = true,
-                Secure = Request.IsHttps,
-                SameSite = SameSiteMode.Lax,
+                Secure = true,
+                SameSite = SameSiteMode.None,
                 Expires = DateTimeOffset.UtcNow.AddMinutes(_jwt.ExpiresMinutes)
-            });
+            };
+            
+            Console.WriteLine("Writing cookie with options:");
+            Console.WriteLine($"HttpOnly: {cookieOptions.HttpOnly}");
+            Console.WriteLine($"Secure: {cookieOptions.Secure}");
+            Console.WriteLine($"SameSite: {cookieOptions.SameSite}");
+            Console.WriteLine($"Expires: {cookieOptions.Expires}");
+            
+            Response.Cookies.Append("Auth", jwt, cookieOptions);
         }
     }
 } 

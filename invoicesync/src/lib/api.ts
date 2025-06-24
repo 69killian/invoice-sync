@@ -1,59 +1,99 @@
 import { Client, ClientCreate, ClientUpdate } from '../features/clients/types';
 import { Service, ServiceCreate, ServiceUpdate } from '../features/services/types';
 import { Invoice, InvoiceCreate, InvoiceUpdate } from '../features/invoices/types';
+import { User, UserUpdate } from '../features/settings/types';
 
 // URL de base de l'API : on privilégie la variable d'environnement, sinon fallback vers le port exposé par launchSettings.json
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5081/api";
 
-export async function apiFetch<T>(endpoint: string, options: RequestInit & { body?: any } = {}): Promise<T> {
-  const { body, ...rest } = options;
-
-  const res = await fetch(`${API_URL}${endpoint}`, {
+const apiFetch = async <T>(endpoint: string, options: RequestInit = {}): Promise<T> => {
+  const url = `${API_URL}${endpoint}`;
+  
+  const defaultOptions: RequestInit = {
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(rest.headers || {})
+      'Accept': 'application/json',
     },
-    ...rest,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    mode: 'cors',
+  };
+
+  const finalOptions = {
+    ...defaultOptions,
+    ...options,
+    headers: {
+      ...defaultOptions.headers,
+      ...options.headers,
+    },
+  };
+
+  console.log('API Request:', {
+    url,
+    method: finalOptions.method,
+    headers: finalOptions.headers,
+    body: finalOptions.body,
+    cookies: document.cookie,
   });
 
-  if (res.status === 401) {
-    throw new Error('unauth');
+  try {
+    const response = await fetch(url, finalOptions);
+    const responseData = await response.json().catch(() => null);
+
+    // Log les headers bruts pour debug
+    const rawHeaders = {};
+    response.headers.forEach((value, key) => {
+      rawHeaders[key] = value;
+    });
+
+    console.log('API Response:', {
+      url,
+      status: response.status,
+      ok: response.ok,
+      data: responseData,
+      rawHeaders,
+      cookies: document.cookie,
+    });
+
+    if (!response.ok) {
+      throw responseData || new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return responseData;
+  } catch (error) {
+    console.error('API Error:', {
+      url,
+      error,
+      cookies: document.cookie,
+    });
+    throw error;
   }
+};
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || res.statusText);
-  }
+export const get = async <T>(endpoint: string): Promise<T> => {
+  return apiFetch<T>(endpoint, {
+    method: 'GET',
+  });
+};
 
-  // Pas de contenu
-  if (res.status === 204) return {} as T;
+export const post = async <T>(endpoint: string, data?: any): Promise<T> => {
+  return apiFetch<T>(endpoint, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+};
 
-  const contentType = res.headers.get('content-type');
-  if (contentType && contentType.includes('application/json')) {
-    // S'il y a bien du JSON on le parse
-    return res.json() as Promise<T>;
-  }
-  // Sinon, on retourne un objet vide / texte brut
-  return {} as T;
-}
+export const del = async <T>(endpoint: string): Promise<T> => {
+  return apiFetch<T>(endpoint, {
+    method: 'DELETE',
+  });
+};
 
-export function post<T>(endpoint: string, body?: any) {
-  return apiFetch<T>(endpoint, { method: 'POST', body });
-}
-
-export function get<T>(endpoint: string) {
-  return apiFetch<T>(endpoint);
-}
-
-export function del<T>(endpoint: string) {
-  return apiFetch<T>(endpoint, { method: 'DELETE' });
-}
-
-export function put<T>(endpoint: string, body?: any) {
-  return apiFetch<T>(endpoint, { method: 'PUT', body });
-}
+export const put = async <T>(endpoint: string, data: any): Promise<T> => {
+  return apiFetch<T>(endpoint, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+};
 
 export const clientAPI = {
   list: () => get<Client[]>('/client'),
@@ -97,4 +137,10 @@ export const invoiceAPI = {
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
   },
+};
+
+export const userAPI = {
+  get: (id: string) => get<User>(`/user/${id}`),
+  update: (id: string, payload: UserUpdate) => put(`/user/${id}`, payload),
+  remove: (id: string) => del(`/user/${id}`),
 }; 

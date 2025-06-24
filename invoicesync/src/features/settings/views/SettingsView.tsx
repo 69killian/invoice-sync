@@ -6,39 +6,51 @@ import DeleteAccountInitialModal from "../components/DeleteAccountInitialModal"
 import DeleteAccountFinalModal from "../components/DeleteAccountFinalModal"
 import { useAuth } from "../../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useUser } from "../hooks/useUser";
 
 const SettingsView = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showFinalDeleteModal, setShowFinalDeleteModal] = useState(false);
   const [confirmationText, setConfirmationText] = useState("");
-  const { logout } = useAuth();
+  const [deleteError, setDeleteError] = useState<string>();
+  const { user: authUser, logout } = useAuth();
   const navigate = useNavigate();
+  const { deleteUser, isDeleting } = useUser(authUser?.id || '');
 
   const openDeleteModal = () => {
     setShowDeleteModal(true);
+    setDeleteError(undefined);
   };
 
   const closeDeleteModal = () => {
     setShowDeleteModal(false);
     setConfirmationText("");
+    setDeleteError(undefined);
   };
 
   const proceedToFinalConfirmation = () => {
     setShowDeleteModal(false);
     setShowFinalDeleteModal(true);
+    setDeleteError(undefined);
   };
 
   const closeFinalDeleteModal = () => {
     setShowFinalDeleteModal(false);
     setConfirmationText("");
+    setDeleteError(undefined);
   };
 
-  const confirmAccountDeletion = () => {
-    if (confirmationText === "SUPPRIMER MON COMPTE") {
-      // Here you would typically call your backend to delete the account
-      console.log('Account deletion confirmed');
-      // Redirect to login or home page
-      closeFinalDeleteModal();
+  const confirmAccountDeletion = async () => {
+    if (confirmationText !== "SUPPRIMER MON COMPTE" || isDeleting) return;
+    
+    try {
+      setDeleteError(undefined);
+      await deleteUser();
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      setDeleteError("Une erreur est survenue lors de la suppression du compte. Veuillez réessayer.");
     }
   };
 
@@ -70,6 +82,8 @@ const SettingsView = () => {
         onConfirmationTextChange={setConfirmationText}
         onCancel={closeFinalDeleteModal}
         onConfirm={confirmAccountDeletion}
+        isDeleting={isDeleting}
+        error={deleteError}
       />
     </div>
   );
