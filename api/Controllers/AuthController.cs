@@ -81,6 +81,11 @@ namespace api.Controllers
                 Console.WriteLine($"Auth cookie value length: {authCookie.Length}");
             }
             Console.WriteLine($"Authorization header present: {Request.Headers.ContainsKey("Authorization")}");
+            Console.WriteLine($"Origin header: {Request.Headers["Origin"]}");
+            
+            // Ajouter des en-têtes CORS explicites
+            Response.Headers.Add("Access-Control-Allow-Credentials", "true");
+            Response.Headers.Add("Access-Control-Allow-Origin", "https://quiet-semifreddo-0c263c.netlify.app");
             
             var email = User.FindFirstValue(ClaimTypes.Email);
             var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -121,7 +126,8 @@ namespace api.Controllers
                 Secure = true,
                 SameSite = SameSiteMode.None,
                 Expires = DateTimeOffset.UtcNow.AddMinutes(_jwt.ExpiresMinutes),
-                Path = "/"  // Ensure cookie is available for all paths
+                Path = "/",
+                Domain = null  // Permet au cookie d'être envoyé au domaine actuel
             };
             
             Console.WriteLine("Writing cookie with options:");
@@ -130,6 +136,11 @@ namespace api.Controllers
             Console.WriteLine($"SameSite: {cookieOptions.SameSite}");
             Console.WriteLine($"Expires: {cookieOptions.Expires}");
             Console.WriteLine($"Path: {cookieOptions.Path}");
+            Console.WriteLine($"Domain: {cookieOptions.Domain}");
+            
+            // Ajouter des en-têtes CORS explicites
+            Response.Headers.Add("Access-Control-Allow-Credentials", "true");
+            Response.Headers.Add("Access-Control-Allow-Origin", "https://quiet-semifreddo-0c263c.netlify.app");
             
             Response.Cookies.Append("Auth", jwt, cookieOptions);
         }
