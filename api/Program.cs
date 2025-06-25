@@ -15,21 +15,17 @@ System.Net.ServicePointManager.DnsRefreshTimeout = 0;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Kestrel to use both IPv4 and IPv6
+// Simplified Kestrel configuration
 builder.WebHost.ConfigureKestrel(options =>
 {
     var port = int.Parse(Environment.GetEnvironmentVariable("PORT") ?? "8080");
-    // Écoute sur toutes les interfaces IPv4 et IPv6
-    options.ListenAnyIP(port, listenOptions =>
-    {
-        listenOptions.UseConnectionLogging();
-    });
+    options.ListenAnyIP(port);
 });
 
 // Add logging
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
-builder.Logging.SetMinimumLevel(LogLevel.Debug); // Set to Debug for more detailed logs
+builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
 // Create logger factory
 var loggerFactory = LoggerFactory.Create(builder =>
@@ -44,8 +40,7 @@ try
 {
     startupLogger.LogInformation("Starting application...");
     startupLogger.LogInformation($"Environment: {builder.Environment.EnvironmentName}");
-    startupLogger.LogInformation($"IPv6 Disabled: {AppContext.TryGetSwitch("System.Net.DisableIPv6", out bool disableIPv6) && disableIPv6}");
-    startupLogger.LogInformation($"Kestrel Endpoints: {string.Join(", ", builder.WebHost.GetSetting("urls")?.Split(';') ?? Array.Empty<string>())}");
+    startupLogger.LogInformation($"PORT: {Environment.GetEnvironmentVariable("PORT")}");
     
     // Configure CORS with detailed logging
     builder.Services.AddCors(options =>
