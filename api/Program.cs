@@ -10,13 +10,22 @@ using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Force IPv4
+AppContext.SetSwitch("System.Net.DisableIPv6", true);
+System.Net.ServicePointManager.UseNagleAlgorithm = false;
+
 // Configure port for Railway
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+builder.WebHost.UseKestrel(options =>
+{
+    options.ListenAnyIP(int.Parse(port));
+});
 
 // Add logging
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
+builder.Logging.SetMinimumLevel(LogLevel.Information);
 
 // Create logger factory
 var loggerFactory = LoggerFactory.Create(builder =>
@@ -31,6 +40,8 @@ try
 {
     startupLogger.LogInformation("Starting application...");
     startupLogger.LogInformation($"Environment: {builder.Environment.EnvironmentName}");
+    startupLogger.LogInformation($"Port: {port}");
+    startupLogger.LogInformation($"IPv6 Disabled: {AppContext.TryGetSwitch("System.Net.DisableIPv6", out bool disableIPv6) && disableIPv6}");
     
     // Log connection string (masked)
     var connString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -51,9 +62,6 @@ try
 
         try 
         {
-            // Force IPv4
-            AppContext.SetSwitch("System.Net.DisableIPv6", true);
-
             // Parse the original connection string to get the password
             var originalBuilder = new NpgsqlConnectionStringBuilder(connectionString);
             startupLogger.LogInformation("Successfully parsed original connection string");
@@ -127,6 +135,7 @@ try
                         "http://localhost:5173",
                         "http://localhost:3000"
                     };
+                    startupLogger.LogInformation($"Checking origin: {origin}");
                     return allowedOrigins.Contains(origin);
                 })
                 .AllowAnyMethod()
