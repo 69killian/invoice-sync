@@ -4,8 +4,8 @@ import { Invoice, InvoiceCreate, InvoiceUpdate } from '../features/invoices/type
 import { User, UserUpdate } from '../features/settings/types';
 import { Activity } from '../features/activities/types';
 
-// URL de base de l'API : on privilégie la variable d'environnement, sinon fallback vers le port exposé par launchSettings.json
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5081/api";
+// URL de base de l'API : on privilégie la variable d'environnement, sinon fallback vers l'API en production
+const API_URL = process.env.REACT_APP_API_URL || "https://invoice-sync-production.up.railway.app/api";
 
 const apiFetch = async <T>(endpoint: string, options: RequestInit = {}): Promise<T> => {
   const url = `${API_URL}${endpoint}`;
