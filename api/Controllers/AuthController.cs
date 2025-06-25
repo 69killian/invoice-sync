@@ -84,8 +84,12 @@ namespace api.Controllers
             Console.WriteLine($"Origin header: {Request.Headers["Origin"]}");
             
             // Ajouter des en-têtes CORS explicites
-            Response.Headers.Add("Access-Control-Allow-Credentials", "true");
-            Response.Headers.Add("Access-Control-Allow-Origin", "https://quiet-semifreddo-0c263c.netlify.app");
+            var origin = Request.Headers["Origin"].ToString();
+            if (!string.IsNullOrEmpty(origin))
+            {
+                Response.Headers["Access-Control-Allow-Origin"] = origin;
+                Response.Headers["Access-Control-Allow-Credentials"] = "true";
+            }
             
             var email = User.FindFirstValue(ClaimTypes.Email);
             var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -139,8 +143,12 @@ namespace api.Controllers
             Console.WriteLine($"Domain: {cookieOptions.Domain}");
             
             // Ajouter des en-têtes CORS explicites
-            Response.Headers.Add("Access-Control-Allow-Credentials", "true");
-            Response.Headers.Add("Access-Control-Allow-Origin", "https://quiet-semifreddo-0c263c.netlify.app");
+            var origin = Request.Headers["Origin"].ToString();
+            if (!string.IsNullOrEmpty(origin))
+            {
+                Response.Headers["Access-Control-Allow-Origin"] = origin;
+                Response.Headers["Access-Control-Allow-Credentials"] = "true";
+            }
             
             Response.Cookies.Append("Auth", jwt, cookieOptions);
         }

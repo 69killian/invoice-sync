@@ -28,13 +28,13 @@ builder.WebHost.ConfigureKestrel(options =>
 // Add logging
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
-builder.Logging.SetMinimumLevel(LogLevel.Information);
+builder.Logging.SetMinimumLevel(LogLevel.Debug); // Set to Debug for more detailed logs
 
 // Create logger factory
 var loggerFactory = LoggerFactory.Create(builder =>
 {
     builder.AddConsole();
-    builder.SetMinimumLevel(LogLevel.Information);
+    builder.SetMinimumLevel(LogLevel.Debug);
 });
 
 var startupLogger = loggerFactory.CreateLogger<Program>();
@@ -51,28 +51,27 @@ try
     {
         options.AddPolicy("AllowNetlify", policy =>
         {
+            var allowedOrigins = new[]
+            {
+                "https://invoice-sync-lilac.vercel.app",    // Vercel domain
+                "https://quiet-semifreddo-0c263c.netlify.app",
+                "http://localhost:5173",
+                "http://localhost:3000"
+            };
+
             policy
-                .SetIsOriginAllowed(origin =>
-                {
-                    var allowedOrigins = new[]
-                    {
-                        "https://quiet-semifreddo-0c263c.netlify.app",
-                        "http://localhost:5173",
-                        "http://localhost:3000"
-                    };
-                    startupLogger.LogInformation($"CORS: Checking origin: {origin}");
-                    var isAllowed = allowedOrigins.Contains(origin);
-                    startupLogger.LogInformation($"CORS: Origin {origin} is {(isAllowed ? "allowed" : "not allowed")}");
-                    return isAllowed;
-                })
+                .WithOrigins(allowedOrigins)
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials()
                 .WithExposedHeaders("Set-Cookie", "Authorization");
 
-            startupLogger.LogInformation("CORS policy configured successfully");
+            startupLogger.LogInformation($"CORS policy configured with origins: {string.Join(", ", allowedOrigins)}");
         });
     });
+
+    // Add middleware to log all requests
+    builder.Services.AddTransient<RequestLoggingMiddleware>();
 
     // Add DbContext
     builder.Services.AddDbContext<AppDbContext>(options =>
@@ -241,6 +240,9 @@ try
         app.UseSwaggerUI();
     }
 
+    // Add request logging middleware
+    app.UseMiddleware<RequestLoggingMiddleware>();
+
     // Use CORS before any other middleware
     app.UseCors("AllowNetlify");
 
@@ -263,6 +265,22 @@ try
         return Results.Ok("Healthy");
     });
 
+    // Add OPTIONS handler for CORS preflight
+    app.Use(async (context, next) =>
+    {
+        if (context.Request.Method == "OPTIONS")
+        {
+            context.Response.Headers.Add("Access-Control-Allow-Origin", context.Request.Headers["Origin"].ToString());
+            context.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With");
+            context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+            context.Response.Headers.Add("Access-Control-Allow-Credentials", "true");
+            context.Response.StatusCode = 200;
+            return;
+        }
+
+        await next();
+    });
+
     startupLogger.LogInformation("Application configured successfully");
     app.Run();
 }
@@ -270,4 +288,37 @@ catch (Exception ex)
 {
     startupLogger.LogCritical(ex, "Application startup failed");
     throw;
+}
+
+// Request logging middleware
+public class RequestLoggingMiddleware
+{
+    private readonly RequestDelegate _next;
+    private readonly ILogger _logger;
+
+    public RequestLoggingMiddleware(RequestDelegate next, ILoggerFactory loggerFactory)
+    {
+        _next = next;
+        _logger = loggerFactory.CreateLogger<RequestLoggingMiddleware>();
+    }
+
+    public async Task InvokeAsync(HttpContext context)
+    {
+        try
+        {
+            _logger.LogInformation($"Request: {context.Request.Method} {context.Request.Path}");
+            _logger.LogInformation($"Origin: {context.Request.Headers["Origin"]}");
+            _logger.LogInformation($"Headers: {string.Join(", ", context.Request.Headers.Select(h => $"{h.Key}: {h.Value}"))}");
+
+            await _next(context);
+
+            _logger.LogInformation($"Response Status: {context.Response.StatusCode}");
+            _logger.LogInformation($"Response Headers: {string.Join(", ", context.Response.Headers.Select(h => $"{h.Key}: {h.Value}"))}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing request");
+            throw;
+        }
+    }
 }
