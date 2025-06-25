@@ -54,30 +54,25 @@ try
             // Force IPv4
             AppContext.SetSwitch("System.Net.DisableIPv6", true);
 
-            // Parse the connection string
-            var tempBuilder = new NpgsqlConnectionStringBuilder(connectionString);
-            
-            // Log the host (before any modification)
-            startupLogger.LogInformation($"Original host from connection string: {tempBuilder.Host}");
+            // Parse the original connection string to get the password
+            var originalBuilder = new NpgsqlConnectionStringBuilder(connectionString);
+            startupLogger.LogInformation("Successfully parsed original connection string");
 
-            // Configure Npgsql with proper connection settings
+            // Configure Npgsql with proper connection settings for Supabase Pooler
             var npgsqlBuilder = new NpgsqlConnectionStringBuilder
             {
-                Host = tempBuilder.Host,         // Use the original host without modification
-                Port = tempBuilder.Port,
-                Database = tempBuilder.Database,
-                Username = tempBuilder.Username,
-                Password = tempBuilder.Password,
-                Pooling = false,
-                Timeout = 60,
-                CommandTimeout = 60,
+                Host = "aws-0-eu-west-3.pooler.supabase.com",
+                Port = 5432,
+                Database = "postgres",
+                Username = "postgres.gkggljislsuccwxyqabi",  // Format: postgres.project-ref
+                Password = originalBuilder.Password,         // Use password from original connection string
+                Pooling = false,                            // We're using Supabase's connection pooler
+                Timeout = 30,                               // Reduced timeout since we're using pooler
+                CommandTimeout = 30,
                 IncludeErrorDetail = true,
-                SslMode = SslMode.Require,       // Required for Supabase
+                SslMode = SslMode.Require,                  // Required for Supabase
                 TrustServerCertificate = true,
-                KeepAlive = 30,
-                ConnectionIdleLifetime = 300,
-                ConnectionPruningInterval = 60,
-                MaxPoolSize = 5
+                KeepAlive = 30
             };
 
             // Log the connection string (with masked password)
@@ -88,10 +83,10 @@ try
             {
                 o.EnableRetryOnFailure(
                     maxRetryCount: 5,
-                    maxRetryDelay: TimeSpan.FromSeconds(30),
+                    maxRetryDelay: TimeSpan.FromSeconds(10),  // Reduced retry delay for pooler
                     errorCodesToAdd: null
                 );
-                o.CommandTimeout(60);
+                o.CommandTimeout(30);
                 o.MigrationsHistoryTable("__EFMigrationsHistory");
             });
 
