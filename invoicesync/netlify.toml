@@ -5,6 +5,15 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  REACT_APP_API_URL = "https://invoice-sync-production.up.railway.app/api"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "https://invoice-sync-production.up.railway.app"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Origin, X-Requested-With, Content-Type, Accept"
+    Access-Control-Allow-Credentials = "true"
 
 [[redirects]]
   from = "/*"
