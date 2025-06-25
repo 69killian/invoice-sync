@@ -28,6 +28,15 @@ namespace api.Controllers
             _logger = logger;
         }
 
+        private void AddCorsHeaders()
+        {
+            Response.Headers["Access-Control-Allow-Origin"] = "https://invoice-sync-lilac.vercel.app";
+            Response.Headers["Access-Control-Allow-Credentials"] = "true";
+            Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+            Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With, Accept";
+            Response.Headers["Access-Control-Expose-Headers"] = "Set-Cookie";
+        }
+
         public record LoginRequest(string Email);
 
         [HttpPost("login")]
@@ -37,9 +46,7 @@ namespace api.Controllers
             _logger.LogInformation($"Login attempt from origin: {Request.Headers["Origin"]}");
             _logger.LogInformation($"Request headers: {string.Join(", ", Request.Headers.Select(h => $"{h.Key}: {h.Value}"))}");
             
-            // Ajouter explicitement les headers CORS
-            Response.Headers.Add("Access-Control-Allow-Origin", "https://invoice-sync-lilac.vercel.app");
-            Response.Headers.Add("Access-Control-Allow-Credentials", "true");
+            AddCorsHeaders();
             
             if (string.IsNullOrWhiteSpace(req.Email))
                 return BadRequest("Email requis");
@@ -76,11 +83,16 @@ namespace api.Controllers
         public IActionResult LoginOptions()
         {
             _logger.LogInformation("OPTIONS request received for /login");
-            Response.Headers.Add("Access-Control-Allow-Origin", "https://invoice-sync-lilac.vercel.app");
-            Response.Headers.Add("Access-Control-Allow-Methods", "POST, OPTIONS");
-            Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept");
-            Response.Headers.Add("Access-Control-Allow-Credentials", "true");
-            Response.Headers.Add("Access-Control-Max-Age", "86400");
+            AddCorsHeaders();
+            return Ok();
+        }
+
+        [HttpOptions("me")]
+        [AllowAnonymous]
+        public IActionResult MeOptions()
+        {
+            _logger.LogInformation("OPTIONS request received for /me");
+            AddCorsHeaders();
             return Ok();
         }
 
@@ -88,6 +100,7 @@ namespace api.Controllers
         [HttpPost("logout")]
         public IActionResult Logout()
         {
+            AddCorsHeaders();
             Response.Cookies.Delete("Auth");
             return NoContent();
         }
@@ -96,50 +109,44 @@ namespace api.Controllers
         [HttpGet("me")]
         public IActionResult Me()
         {
-            Console.WriteLine("ME endpoint called");
-            Console.WriteLine($"Auth cookie present: {Request.Cookies.ContainsKey("Auth")}");
+            _logger.LogInformation("ME endpoint called");
+            _logger.LogInformation($"Auth cookie present: {Request.Cookies.ContainsKey("Auth")}");
             if (Request.Cookies.TryGetValue("Auth", out var authCookie))
             {
-                Console.WriteLine($"Auth cookie value length: {authCookie.Length}");
+                _logger.LogInformation($"Auth cookie value length: {authCookie.Length}");
             }
-            Console.WriteLine($"Authorization header present: {Request.Headers.ContainsKey("Authorization")}");
-            Console.WriteLine($"Origin header: {Request.Headers["Origin"]}");
+            _logger.LogInformation($"Authorization header present: {Request.Headers.ContainsKey("Authorization")}");
+            _logger.LogInformation($"Origin header: {Request.Headers["Origin"]}");
             
-            // Ajouter des en-têtes CORS explicites
-            var origin = Request.Headers["Origin"].ToString();
-            if (!string.IsNullOrEmpty(origin))
-            {
-                Response.Headers["Access-Control-Allow-Origin"] = origin;
-                Response.Headers["Access-Control-Allow-Credentials"] = "true";
-            }
+            AddCorsHeaders();
             
             var email = User.FindFirstValue(ClaimTypes.Email);
             var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             
-            Console.WriteLine($"Claims found - Email: {email != null}, Id: {idStr != null}");
-            Console.WriteLine($"Email value: {email}, Id value: {idStr}");
+            _logger.LogInformation($"Claims found - Email: {email != null}, Id: {idStr != null}");
+            _logger.LogInformation($"Email value: {email}, Id value: {idStr}");
             
             return Ok(new { Id = idStr, Email = email });
         }
 
-        private string GenerateJwt(User u)
+        private string GenerateJwt(User user)
         {
-            var creds = new SigningCredentials(
-                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.SecretKey)),
-                SecurityAlgorithms.HmacSha256);
-
-            var claims = new List<Claim>
+            var claims = new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, u.Id.ToString()),
-                new Claim(ClaimTypes.Email, u.Email)
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
             };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.SecretKey));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
                 issuer: _jwt.Issuer,
                 audience: _jwt.Audience,
                 claims: claims,
                 expires: DateTime.UtcNow.AddMinutes(_jwt.ExpiresMinutes),
-                signingCredentials: creds);
+                signingCredentials: creds
+            );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
@@ -156,21 +163,15 @@ namespace api.Controllers
                 Domain = null  // Permet au cookie d'être envoyé au domaine actuel
             };
             
-            Console.WriteLine("Writing cookie with options:");
-            Console.WriteLine($"HttpOnly: {cookieOptions.HttpOnly}");
-            Console.WriteLine($"Secure: {cookieOptions.Secure}");
-            Console.WriteLine($"SameSite: {cookieOptions.SameSite}");
-            Console.WriteLine($"Expires: {cookieOptions.Expires}");
-            Console.WriteLine($"Path: {cookieOptions.Path}");
-            Console.WriteLine($"Domain: {cookieOptions.Domain}");
+            _logger.LogInformation("Writing cookie with options:");
+            _logger.LogInformation($"HttpOnly: {cookieOptions.HttpOnly}");
+            _logger.LogInformation($"Secure: {cookieOptions.Secure}");
+            _logger.LogInformation($"SameSite: {cookieOptions.SameSite}");
+            _logger.LogInformation($"Expires: {cookieOptions.Expires}");
+            _logger.LogInformation($"Path: {cookieOptions.Path}");
+            _logger.LogInformation($"Domain: {cookieOptions.Domain}");
             
-            // Ajouter des en-têtes CORS explicites
-            var origin = Request.Headers["Origin"].ToString();
-            if (!string.IsNullOrEmpty(origin))
-            {
-                Response.Headers["Access-Control-Allow-Origin"] = origin;
-                Response.Headers["Access-Control-Allow-Credentials"] = "true";
-            }
+            AddCorsHeaders();
             
             Response.Cookies.Append("Auth", jwt, cookieOptions);
         }
