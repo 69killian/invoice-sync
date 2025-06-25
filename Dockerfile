@@ -16,8 +16,9 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 COPY --from=build /app .
 
-# Configure the port
+# Configure the port and force IPv4
 ENV ASPNETCORE_URLS=http://+:8080
+ENV DOTNET_SYSTEM_NET_DISABLEIPV6=true
 EXPOSE 8080
 
 # Start the app

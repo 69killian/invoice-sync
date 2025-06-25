@@ -51,6 +51,9 @@ try
 
         try 
         {
+            // Force IPv4
+            AppContext.SetSwitch("System.Net.DisableIPv6", true);
+
             // Configure Npgsql with proper connection settings
             var npgsqlBuilder = new NpgsqlConnectionStringBuilder(connectionString)
             {
@@ -58,8 +61,12 @@ try
                 Timeout = 30,
                 CommandTimeout = 30,
                 IncludeErrorDetail = true,
-                SslMode = SslMode.Prefer
+                SslMode = SslMode.Prefer,
+                Host = npgsqlBuilder.Host.Replace("db.", ""), // Remove 'db.' prefix if present
+                KeepAlive = 30
             };
+
+            startupLogger.LogInformation($"Attempting to connect to database at {npgsqlBuilder.Host}:{npgsqlBuilder.Port}");
 
             options.UseNpgsql(npgsqlBuilder.ConnectionString, o =>
             {
