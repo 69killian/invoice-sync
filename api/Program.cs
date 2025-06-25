@@ -12,6 +12,18 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Configure CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    });
+});
+
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddEndpointsApiExplorer();
@@ -74,18 +86,7 @@ builder.Services.AddAuthorization(options =>
         .Build();
 });
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("FrontendDev", policy =>
-    {
-        policy.WithOrigins("http://localhost:3000")
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
-    });
-});
-
-// Add cookie policy configuration
+// Configure cookie policy
 builder.Services.Configure<CookiePolicyOptions>(options =>
 {
     options.MinimumSameSitePolicy = SameSiteMode.None;
@@ -104,10 +105,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Add cookie policy middleware before CORS
+// Add cookie policy middleware
 app.UseCookiePolicy();
 
-app.UseCors("FrontendDev");
+// Use CORS before authentication
+app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();
