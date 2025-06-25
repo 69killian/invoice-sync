@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.CookiePolicy;
+using Microsoft.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,15 +17,23 @@ builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
+// Create logger factory
+var loggerFactory = LoggerFactory.Create(builder =>
+{
+    builder.AddConsole();
+    builder.SetMinimumLevel(LogLevel.Information);
+});
+
+var startupLogger = loggerFactory.CreateLogger<Program>();
+
 try
 {
-    var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
-    logger.LogInformation("Starting application...");
-    logger.LogInformation($"Environment: {builder.Environment.EnvironmentName}");
+    startupLogger.LogInformation("Starting application...");
+    startupLogger.LogInformation($"Environment: {builder.Environment.EnvironmentName}");
     
     // Log connection string (masked)
     var connString = builder.Configuration.GetConnectionString("DefaultConnection");
-    logger.LogInformation($"Database connection configured: {(connString != null ? "Yes" : "No")}");
+    startupLogger.LogInformation($"Database connection configured: {(connString != null ? "Yes" : "No")}");
 
     // Add DbContext
     builder.Services.AddDbContext<AppDbContext>(options =>
@@ -107,10 +116,10 @@ try
     using (var scope = app.Services.CreateScope())
     {
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        logger.LogInformation("Ensuring database is created...");
+        var scopedLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        scopedLogger.LogInformation("Ensuring database is created...");
         await dbContext.Database.EnsureCreatedAsync();
-        logger.LogInformation("Database check completed");
+        scopedLogger.LogInformation("Database check completed");
     }
 
     // Configure the HTTP request pipeline.
@@ -137,12 +146,11 @@ try
         return Results.Ok("Healthy");
     });
 
-    logger.LogInformation("Application configured successfully");
+    startupLogger.LogInformation("Application configured successfully");
     app.Run();
 }
 catch (Exception ex)
 {
-    var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
-    logger.LogCritical(ex, "Application startup failed");
+    startupLogger.LogCritical(ex, "Application startup failed");
     throw;
 }
