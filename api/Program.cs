@@ -119,10 +119,16 @@ try
         options.AddPolicy("AllowNetlify", policy =>
         {
             policy
-                .WithOrigins("https://quiet-semifreddo-0c263c.netlify.app")
+                .WithOrigins(
+                    "https://quiet-semifreddo-0c263c.netlify.app",
+                    "http://localhost:5173",  // Pour le développement local
+                    "http://localhost:3000"   // Pour le développement local
+                )
                 .AllowAnyMethod()
                 .AllowAnyHeader()
-                .AllowCredentials();
+                .AllowCredentials()
+                .SetIsOriginAllowed(_ => true) // Permet le développement local
+                .WithExposedHeaders("Set-Cookie"); // Important pour l'authentification
         });
     });
 
@@ -222,7 +228,7 @@ try
     // Add cookie policy middleware
     app.UseCookiePolicy();
 
-    // Use CORS before authentication
+    // Use CORS before authentication and other middleware
     app.UseCors("AllowNetlify");
 
     app.UseAuthentication();

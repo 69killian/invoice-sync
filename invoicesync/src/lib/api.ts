@@ -5,19 +5,26 @@ import { User, UserUpdate } from '../features/settings/types';
 import { Activity } from '../features/activities/types';
 
 // URL de base de l'API : on privilégie la variable d'environnement, sinon fallback vers l'API en production
-const API_URL = process.env.REACT_APP_API_URL || "https://invoice-sync-production.up.railway.app/api";
+const API_URL = import.meta.env.VITE_API_URL || "https://invoice-sync-production.up.railway.app/api";
 
 const apiFetch = async <T>(endpoint: string, options: RequestInit = {}): Promise<T> => {
   const url = `${API_URL}${endpoint}`;
   
   const defaultOptions: RequestInit = {
-    credentials: 'include',
+    credentials: 'include',  // Important pour les cookies d'authentification
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',  // Aide pour certains serveurs à identifier les requêtes CORS
     },
     mode: 'cors',
+    cache: 'no-cache',  // Évite les problèmes de cache avec les cookies
   };
+
+  // Si c'est une requête POST/PUT, on s'assure que le body est bien stringifié
+  if (options.body && typeof options.body === 'object') {
+    options.body = JSON.stringify(options.body);
+  }
 
   const finalOptions = {
     ...defaultOptions,
@@ -38,13 +45,18 @@ const apiFetch = async <T>(endpoint: string, options: RequestInit = {}): Promise
 
   try {
     const response = await fetch(url, finalOptions);
-    const responseData = await response.json().catch(() => null);
-
+    
     // Log les headers bruts pour debug
     const rawHeaders = {};
     response.headers.forEach((value, key) => {
       rawHeaders[key] = value;
     });
+
+    // Vérifie si la réponse a du contenu avant de parser le JSON
+    const contentType = response.headers.get('content-type');
+    const responseData = contentType?.includes('application/json') 
+      ? await response.json().catch(() => null)
+      : null;
 
     console.log('API Response:', {
       url,
@@ -56,7 +68,9 @@ const apiFetch = async <T>(endpoint: string, options: RequestInit = {}): Promise
     });
 
     if (!response.ok) {
-      throw responseData || new Error(`HTTP error! status: ${response.status}`);
+      const error = new Error(responseData?.message || `HTTP error! status: ${response.status}`);
+      Object.assign(error, { status: response.status, data: responseData });
+      throw error;
     }
 
     return responseData;
@@ -149,4 +163,13 @@ export const userAPI = {
 export const activityAPI = {
   list: () => get<Activity[]>('/activity'),
   get: (id: string) => get<Activity>(`/activity/${id}`),
+};
+
+export const authAPI = {
+  login: (credentials: { email: string; password: string }) => 
+    post('/auth/login', credentials),
+  logout: () => post('/auth/logout'),
+  me: () => get<User>('/auth/me'),
+  register: (data: { email: string; password: string; name: string }) => 
+    post('/auth/register', data),
 }; 
