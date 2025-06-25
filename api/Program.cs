@@ -49,7 +49,7 @@ try
     // Configure CORS with detailed logging
     builder.Services.AddCors(options =>
     {
-        options.AddPolicy("AllowNetlify", policy =>
+        options.AddPolicy("AllowVercel", policy =>
         {
             var allowedOrigins = new[]
             {
@@ -61,8 +61,8 @@ try
 
             policy
                 .WithOrigins(allowedOrigins)
-                .AllowAnyMethod()
-                .AllowAnyHeader()
+                .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
+                .WithHeaders("Content-Type", "Authorization", "X-Requested-With", "Accept")
                 .AllowCredentials()
                 .WithExposedHeaders("Set-Cookie", "Authorization");
 
@@ -244,7 +244,7 @@ try
     app.UseMiddleware<RequestLoggingMiddleware>();
 
     // Use CORS before any other middleware
-    app.UseCors("AllowNetlify");
+    app.UseCors("AllowVercel");
 
     // Add cookie policy middleware
     app.UseCookiePolicy(new CookiePolicyOptions
@@ -270,12 +270,25 @@ try
     {
         if (context.Request.Method == "OPTIONS")
         {
-            context.Response.Headers.Add("Access-Control-Allow-Origin", context.Request.Headers["Origin"].ToString());
-            context.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Accept, X-Requested-With");
-            context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-            context.Response.Headers.Add("Access-Control-Allow-Credentials", "true");
-            context.Response.StatusCode = 200;
-            return;
+            var origin = context.Request.Headers["Origin"].ToString();
+            var allowedOrigins = new[]
+            {
+                "https://invoice-sync-lilac.vercel.app",
+                "https://quiet-semifreddo-0c263c.netlify.app",
+                "http://localhost:5173",
+                "http://localhost:3000"
+            };
+
+            if (allowedOrigins.Contains(origin))
+            {
+                context.Response.Headers.Add("Access-Control-Allow-Origin", origin);
+                context.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept");
+                context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
+                context.Response.Headers.Add("Access-Control-Allow-Credentials", "true");
+                context.Response.Headers.Add("Access-Control-Max-Age", "86400");
+                context.Response.StatusCode = 200;
+                return;
+            }
         }
 
         await next();
