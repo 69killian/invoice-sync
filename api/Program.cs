@@ -54,15 +54,23 @@ try
             // Force IPv4
             AppContext.SetSwitch("System.Net.DisableIPv6", true);
 
+            // Parse and modify the host from the connection string
+            var tempBuilder = new NpgsqlConnectionStringBuilder(connectionString);
+            var modifiedHost = tempBuilder.Host.Replace("db.", ""); // Remove 'db.' prefix if present
+
             // Configure Npgsql with proper connection settings
-            var npgsqlBuilder = new NpgsqlConnectionStringBuilder(connectionString)
+            var npgsqlBuilder = new NpgsqlConnectionStringBuilder
             {
+                Host = modifiedHost,
+                Port = tempBuilder.Port,
+                Database = tempBuilder.Database,
+                Username = tempBuilder.Username,
+                Password = tempBuilder.Password,
                 Pooling = false,
                 Timeout = 30,
                 CommandTimeout = 30,
                 IncludeErrorDetail = true,
                 SslMode = SslMode.Prefer,
-                Host = npgsqlBuilder.Host.Replace("db.", ""), // Remove 'db.' prefix if present
                 KeepAlive = 30
             };
 
