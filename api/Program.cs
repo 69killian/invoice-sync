@@ -47,10 +47,12 @@ try
             throw new InvalidOperationException("Database connection string is not configured. Please set the DATABASE_URL environment variable.");
         }
 
-        // Configure Npgsql to use IPv4
+        // Configure Npgsql with proper connection settings
         var npgsqlBuilder = new NpgsqlConnectionStringBuilder(connectionString)
         {
-            PreferNonPooledConnection = true // Disable connection pooling for better reliability
+            Pooling = false,
+            TrustServerCertificate = true,
+            Timeout = 30
         };
 
         options.UseNpgsql(npgsqlBuilder.ConnectionString, o =>
