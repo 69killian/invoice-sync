@@ -47,22 +47,38 @@ try
             throw new InvalidOperationException("Database connection string is not configured. Please set the DATABASE_URL environment variable.");
         }
 
-        // Configure Npgsql with proper connection settings
-        var npgsqlBuilder = new NpgsqlConnectionStringBuilder(connectionString)
-        {
-            Pooling = false,
-            TrustServerCertificate = true,
-            Timeout = 30
-        };
+        startupLogger.LogInformation("Configuring database connection...");
 
-        options.UseNpgsql(npgsqlBuilder.ConnectionString, o =>
+        try 
         {
-            o.EnableRetryOnFailure(
-                maxRetryCount: 5,
-                maxRetryDelay: TimeSpan.FromSeconds(30),
-                errorCodesToAdd: null
-            );
-        });
+            // Configure Npgsql with proper connection settings
+            var npgsqlBuilder = new NpgsqlConnectionStringBuilder(connectionString)
+            {
+                Pooling = false,
+                Timeout = 30,
+                CommandTimeout = 30,
+                IncludeErrorDetail = true,
+                SslMode = SslMode.Prefer
+            };
+
+            options.UseNpgsql(npgsqlBuilder.ConnectionString, o =>
+            {
+                o.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(30),
+                    errorCodesToAdd: null
+                );
+                o.CommandTimeout(30);
+                o.MigrationsHistoryTable("__EFMigrationsHistory");
+            });
+
+            startupLogger.LogInformation("Database configuration completed successfully");
+        }
+        catch (Exception ex)
+        {
+            startupLogger.LogError(ex, "Error configuring database connection");
+            throw;
+        }
     });
 
     // Configure CORS
@@ -132,11 +148,27 @@ try
     // Ensure database is created
     using (var scope = app.Services.CreateScope())
     {
-        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var scopedLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        scopedLogger.LogInformation("Ensuring database is created...");
-        await dbContext.Database.EnsureCreatedAsync();
-        scopedLogger.LogInformation("Database check completed");
+        try
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var scopedLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+            scopedLogger.LogInformation("Ensuring database is created...");
+            
+            // First check if we can connect
+            scopedLogger.LogInformation("Testing database connection...");
+            await dbContext.Database.CanConnectAsync();
+            scopedLogger.LogInformation("Database connection test successful");
+
+            // Then ensure database is created
+            await dbContext.Database.EnsureCreatedAsync();
+            scopedLogger.LogInformation("Database check completed");
+        }
+        catch (Exception ex)
+        {
+            var scopedLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+            scopedLogger.LogError(ex, "Error during database initialization");
+            throw;
+        }
     }
 
     // Configure the HTTP request pipeline.
