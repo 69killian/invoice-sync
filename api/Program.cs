@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.AspNetCore.CookiePolicy;
 using Microsoft.Extensions.Logging;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,7 +46,21 @@ try
         {
             throw new InvalidOperationException("Database connection string is not configured. Please set the DATABASE_URL environment variable.");
         }
-        options.UseNpgsql(connectionString);
+
+        // Configure Npgsql to use IPv4
+        var npgsqlBuilder = new NpgsqlConnectionStringBuilder(connectionString)
+        {
+            PreferNonPooledConnection = true // Disable connection pooling for better reliability
+        };
+
+        options.UseNpgsql(npgsqlBuilder.ConnectionString, o =>
+        {
+            o.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(30),
+                errorCodesToAdd: null
+            );
+        });
     });
 
     // Configure CORS
