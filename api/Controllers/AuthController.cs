@@ -8,20 +8,24 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Cors;
 
 namespace api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [EnableCors("AllowVercel")]
     public class AuthController : ControllerBase
     {
         private readonly AppDbContext _db;
         private readonly JwtSettings _jwt;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(AppDbContext db, IOptions<JwtSettings> jwt)
+        public AuthController(AppDbContext db, IOptions<JwtSettings> jwt, ILogger<AuthController> logger)
         {
             _db = db;
             _jwt = jwt.Value;
+            _logger = logger;
         }
 
         public record LoginRequest(string Email);
@@ -30,7 +34,12 @@ namespace api.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginRequest req)
         {
-            Console.WriteLine($"Login attempt for email: {req.Email}");
+            _logger.LogInformation($"Login attempt from origin: {Request.Headers["Origin"]}");
+            _logger.LogInformation($"Request headers: {string.Join(", ", Request.Headers.Select(h => $"{h.Key}: {h.Value}"))}");
+            
+            // Ajouter explicitement les headers CORS
+            Response.Headers.Add("Access-Control-Allow-Origin", "https://invoice-sync-lilac.vercel.app");
+            Response.Headers.Add("Access-Control-Allow-Credentials", "true");
             
             if (string.IsNullOrWhiteSpace(req.Email))
                 return BadRequest("Email requis");
@@ -39,7 +48,7 @@ namespace api.Controllers
             var user = _db.Users.FirstOrDefault(u => u.Email == email);
             if (user is null)
             {
-                Console.WriteLine($"Creating new user for email: {email}");
+                _logger.LogInformation($"Creating new user for email: {email}");
                 user = new User
                 {
                     Id = Guid.NewGuid(),
@@ -51,15 +60,28 @@ namespace api.Controllers
             }
 
             var token = GenerateJwt(user);
-            Console.WriteLine($"Generated JWT token length: {token.Length}");
+            _logger.LogInformation($"Generated JWT token length: {token.Length}");
             WriteCookie(token);
-            Console.WriteLine("Cookie written to response");
+            _logger.LogInformation("Cookie written to response");
 
             var setCookie = Response.Headers["Set-Cookie"].ToString();
-            Console.WriteLine($"Set-Cookie header: {setCookie}");
-            Console.WriteLine($"Cookie settings: HttpOnly={setCookie.Contains("HttpOnly")}, Secure={setCookie.Contains("Secure")}, SameSite={setCookie.Contains("SameSite=None")}");
+            _logger.LogInformation($"Set-Cookie header: {setCookie}");
+            _logger.LogInformation($"Cookie settings: HttpOnly={setCookie.Contains("HttpOnly")}, Secure={setCookie.Contains("Secure")}, SameSite={setCookie.Contains("SameSite=None")}");
 
             return Ok(new { user.Id, user.Email });
+        }
+
+        [HttpOptions("login")]
+        [AllowAnonymous]
+        public IActionResult LoginOptions()
+        {
+            _logger.LogInformation("OPTIONS request received for /login");
+            Response.Headers.Add("Access-Control-Allow-Origin", "https://invoice-sync-lilac.vercel.app");
+            Response.Headers.Add("Access-Control-Allow-Methods", "POST, OPTIONS");
+            Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept");
+            Response.Headers.Add("Access-Control-Allow-Credentials", "true");
+            Response.Headers.Add("Access-Control-Max-Age", "86400");
+            return Ok();
         }
 
         [Authorize]

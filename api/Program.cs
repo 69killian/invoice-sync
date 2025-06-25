@@ -49,12 +49,9 @@ try
         {
             policy
                 .WithOrigins("https://invoice-sync-lilac.vercel.app")
-                .AllowCredentials()
                 .AllowAnyMethod()
                 .AllowAnyHeader()
-                .WithExposedHeaders("Set-Cookie");
-
-            startupLogger.LogInformation("CORS policy configured for Vercel");
+                .AllowCredentials();
         });
     });
 
@@ -232,41 +229,7 @@ try
     app.UseMiddleware<RequestLoggingMiddleware>();
 
     // Use CORS before routing and endpoints
-    app.UseCors("AllowVercel");
-
-    // Add OPTIONS handler for CORS preflight
-    app.Use(async (context, next) =>
-    {
-        var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
-        logger.LogInformation($"Request Method: {context.Request.Method}");
-        logger.LogInformation($"Request Headers: {string.Join(", ", context.Request.Headers.Select(h => $"{h.Key}: {h.Value}"))}");
-
-        if (context.Request.Method == "OPTIONS")
-        {
-            var origin = context.Request.Headers["Origin"].ToString();
-            logger.LogInformation($"OPTIONS request from origin: {origin}");
-
-            if (origin == "https://invoice-sync-lilac.vercel.app")
-            {
-                context.Response.Headers.Add("Access-Control-Allow-Origin", origin);
-                context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
-                context.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept");
-                context.Response.Headers.Add("Access-Control-Allow-Credentials", "true");
-                context.Response.Headers.Add("Access-Control-Max-Age", "86400");
-                context.Response.Headers.Add("Access-Control-Expose-Headers", "Set-Cookie");
-                
-                logger.LogInformation("CORS headers added for OPTIONS request");
-                context.Response.StatusCode = 200;
-                return;
-            }
-            else
-            {
-                logger.LogWarning($"Unauthorized origin for OPTIONS request: {origin}");
-            }
-        }
-
-        await next();
-    });
+    app.UseCors();
 
     // Add cookie policy middleware
     app.UseCookiePolicy(new CookiePolicyOptions
