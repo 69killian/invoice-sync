@@ -15,10 +15,10 @@ builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 // Add logging
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
-var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
 
 try
 {
+    var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
     logger.LogInformation("Starting application...");
     logger.LogInformation($"Environment: {builder.Environment.EnvironmentName}");
     
@@ -29,10 +29,12 @@ try
     // Add DbContext
     builder.Services.AddDbContext<AppDbContext>(options =>
     {
-        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+        var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL") ?? 
+            builder.Configuration.GetConnectionString("DefaultConnection");
+        
         if (string.IsNullOrEmpty(connectionString))
         {
-            throw new InvalidOperationException("Database connection string is not configured");
+            throw new InvalidOperationException("Database connection string is not configured. Please set the DATABASE_URL environment variable.");
         }
         options.UseNpgsql(connectionString);
     });
@@ -56,14 +58,25 @@ try
     builder.Services.AddControllers();
 
     // JWT configuration
-    var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
-    if (jwtSettings == null)
-    {
-        throw new InvalidOperationException("JWT settings are not configured");
-    }
-    logger.LogInformation("JWT settings configured");
+    var jwtSecretKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") ?? 
+        builder.Configuration.GetSection("Jwt:SecretKey").Value;
+    var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? 
+        builder.Configuration.GetSection("Jwt:Issuer").Value;
+    var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? 
+        builder.Configuration.GetSection("Jwt:Audience").Value;
 
-    builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
+    if (string.IsNullOrEmpty(jwtSecretKey))
+    {
+        throw new InvalidOperationException("JWT secret key is not configured. Please set the JWT_SECRET_KEY environment variable.");
+    }
+
+    builder.Services.Configure<JwtSettings>(options =>
+    {
+        options.SecretKey = jwtSecretKey;
+        options.Issuer = jwtIssuer ?? "InvoiceSync";
+        options.Audience = jwtAudience ?? "InvoiceSync";
+        options.ExpiresMinutes = 60;
+    });
 
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
@@ -74,9 +87,9 @@ try
                 ValidateAudience = true,
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-                ValidIssuer = jwtSettings.Issuer,
-                ValidAudience = jwtSettings.Audience,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey))
+                ValidIssuer = jwtIssuer ?? "InvoiceSync",
+                ValidAudience = jwtAudience ?? "InvoiceSync",
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey))
             };
         });
 
@@ -94,6 +107,7 @@ try
     using (var scope = app.Services.CreateScope())
     {
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
         logger.LogInformation("Ensuring database is created...");
         await dbContext.Database.EnsureCreatedAsync();
         logger.LogInformation("Database check completed");
@@ -120,8 +134,7 @@ try
     // Add health check endpoint
     app.MapGet("/health", () => 
     {
-        logger.LogInformation("Health check called");
-        return "Healthy";
+        return Results.Ok("Healthy");
     });
 
     logger.LogInformation("Application configured successfully");
@@ -129,6 +142,7 @@ try
 }
 catch (Exception ex)
 {
+    var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
     logger.LogCritical(ex, "Application startup failed");
     throw;
 }
