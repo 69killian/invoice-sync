@@ -4,14 +4,14 @@ import { AuthProvider, RequireAuth } from './contexts/AuthContext';
 import Layout from "./components/Layout";
 import LoadingSpinner from "./components/LoadingSpinner";
 import LoginPage from "./pages/LoginPage";
-import ClientsPage from "./pages/ClientsPage";
-import ServicesPage from "./pages/ServicesPage";
-import InvoicesPage from "./pages/InvoicesPage";
 import NotFoundPage from "./pages/NotFoundPage";
-import SettingsPage from "./pages/SettingsPage";
 
-// Lazy load Dashboard page
+// Lazy load all pages
 const DashboardPage = React.lazy(() => import("./pages/DashboardPage"));
+const ClientsPage = React.lazy(() => import("./pages/ClientsPage"));
+const ServicesPage = React.lazy(() => import("./pages/ServicesPage"));
+const InvoicesPage = React.lazy(() => import("./pages/InvoicesPage"));
+const SettingsPage = React.lazy(() => import("./pages/SettingsPage"));
 
 function App() {
   return (
@@ -25,10 +25,26 @@ function App() {
                 <DashboardPage />
               </Suspense>
             } />
-            <Route path="clients" element={<ClientsPage />} />
-            <Route path="services" element={<ServicesPage />} />
-            <Route path="invoices" element={<InvoicesPage />} />
-            <Route path="settings" element={<SettingsPage />} />
+            <Route path="clients" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <ClientsPage />
+              </Suspense>
+            } />
+            <Route path="services" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <ServicesPage />
+              </Suspense>
+            } />
+            <Route path="invoices" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <InvoicesPage />
+              </Suspense>
+            } />
+            <Route path="settings" element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <SettingsPage />
+              </Suspense>
+            } />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>
