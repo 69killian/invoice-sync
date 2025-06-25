@@ -8,6 +8,10 @@ using Microsoft.AspNetCore.CookiePolicy;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure port for Railway
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
 // Add DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -104,7 +108,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// Remove HTTPS redirection for Railway
+// app.UseHttpsRedirection();
 
 // Add cookie policy middleware
 app.UseCookiePolicy();
@@ -116,6 +121,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Add health check endpoint
+app.MapGet("/health", () => "Healthy");
 
 var summaries = new[]
 {
