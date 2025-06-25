@@ -51,22 +51,14 @@ try
     {
         options.AddPolicy("AllowVercel", policy =>
         {
-            var allowedOrigins = new[]
-            {
-                "https://invoice-sync-lilac.vercel.app",    // Vercel domain
-                "https://quiet-semifreddo-0c263c.netlify.app",
-                "http://localhost:5173",
-                "http://localhost:3000"
-            };
-
             policy
-                .WithOrigins(allowedOrigins)
-                .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
-                .WithHeaders("Content-Type", "Authorization", "X-Requested-With", "Accept")
+                .WithOrigins("https://invoice-sync-lilac.vercel.app")
                 .AllowCredentials()
-                .WithExposedHeaders("Set-Cookie", "Authorization");
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .WithExposedHeaders("Set-Cookie");
 
-            startupLogger.LogInformation($"CORS policy configured with origins: {string.Join(", ", allowedOrigins)}");
+            startupLogger.LogInformation("CORS policy configured for Vercel");
         });
     });
 
@@ -243,8 +235,42 @@ try
     // Add request logging middleware
     app.UseMiddleware<RequestLoggingMiddleware>();
 
-    // Use CORS before any other middleware
+    // Use CORS before routing and endpoints
     app.UseCors("AllowVercel");
+
+    // Add OPTIONS handler for CORS preflight
+    app.Use(async (context, next) =>
+    {
+        var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+        logger.LogInformation($"Request Method: {context.Request.Method}");
+        logger.LogInformation($"Request Headers: {string.Join(", ", context.Request.Headers.Select(h => $"{h.Key}: {h.Value}"))}");
+
+        if (context.Request.Method == "OPTIONS")
+        {
+            var origin = context.Request.Headers["Origin"].ToString();
+            logger.LogInformation($"OPTIONS request from origin: {origin}");
+
+            if (origin == "https://invoice-sync-lilac.vercel.app")
+            {
+                context.Response.Headers.Add("Access-Control-Allow-Origin", origin);
+                context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
+                context.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept");
+                context.Response.Headers.Add("Access-Control-Allow-Credentials", "true");
+                context.Response.Headers.Add("Access-Control-Max-Age", "86400");
+                context.Response.Headers.Add("Access-Control-Expose-Headers", "Set-Cookie");
+                
+                logger.LogInformation("CORS headers added for OPTIONS request");
+                context.Response.StatusCode = 200;
+                return;
+            }
+            else
+            {
+                logger.LogWarning($"Unauthorized origin for OPTIONS request: {origin}");
+            }
+        }
+
+        await next();
+    });
 
     // Add cookie policy middleware
     app.UseCookiePolicy(new CookiePolicyOptions
@@ -263,35 +289,6 @@ try
     app.MapGet("/health", () => 
     {
         return Results.Ok("Healthy");
-    });
-
-    // Add OPTIONS handler for CORS preflight
-    app.Use(async (context, next) =>
-    {
-        if (context.Request.Method == "OPTIONS")
-        {
-            var origin = context.Request.Headers["Origin"].ToString();
-            var allowedOrigins = new[]
-            {
-                "https://invoice-sync-lilac.vercel.app",
-                "https://quiet-semifreddo-0c263c.netlify.app",
-                "http://localhost:5173",
-                "http://localhost:3000"
-            };
-
-            if (allowedOrigins.Contains(origin))
-            {
-                context.Response.Headers.Add("Access-Control-Allow-Origin", origin);
-                context.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept");
-                context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
-                context.Response.Headers.Add("Access-Control-Allow-Credentials", "true");
-                context.Response.Headers.Add("Access-Control-Max-Age", "86400");
-                context.Response.StatusCode = 200;
-                return;
-            }
-        }
-
-        await next();
     });
 
     startupLogger.LogInformation("Application configured successfully");
