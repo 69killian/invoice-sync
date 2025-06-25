@@ -14,7 +14,7 @@ const qc = new QueryClient();
 root.render(
   <React.StrictMode>
     <QueryClientProvider client={qc}>
-      <App />
+    <App />
     </QueryClientProvider>
   </React.StrictMode>
 );

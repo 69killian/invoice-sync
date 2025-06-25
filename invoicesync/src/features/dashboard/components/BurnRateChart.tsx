@@ -23,6 +23,8 @@ const BurnRateChart: React.FC<BurnRateChartProps> = ({ monthsToShow = 12 }) => {
   } = useRevenueStats(monthsToShow)
 
   const [hoveredPoint, setHoveredPoint] = React.useState<number | null>(null)
+  const chartRef = React.useRef<HTMLDivElement>(null)
+  const [mousePos, setMousePos] = React.useState({ x: 0, y: 0 })
 
   // Format amounts for display
   const formatAmount = (amount: number) => 
@@ -32,25 +34,13 @@ const BurnRateChart: React.FC<BurnRateChartProps> = ({ monthsToShow = 12 }) => {
   const createPath = (points: ChartPoint[]) => {
     if (points.length < 2) return '';
     
-    const path = points.reduce((acc, point, i, arr) => {
+    const path = points.reduce((acc, point, i) => {
       if (i === 0) {
         // Move to first point
         return `M ${point.x * 2.5} ${200 - point.y * 2}`;
       }
-      
-      // Calculate control points for smooth curve
-      const prev = arr[i - 1];
-      const currX = point.x * 2.5;
-      const currY = 200 - point.y * 2;
-      const prevX = prev.x * 2.5;
-      const prevY = 200 - prev.y * 2;
-      
-      // Control points at 1/3 and 2/3 between points
-      const cp1x = prevX + (currX - prevX) / 3;
-      const cp2x = prevX + 2 * (currX - prevX) / 3;
-      
-      // Use cubic Bezier curve
-      return `${acc} C ${cp1x},${prevY} ${cp2x},${currY} ${currX},${currY}`;
+      // Use straight lines (L) instead of curves
+      return `${acc} L ${point.x * 2.5} ${200 - point.y * 2}`;
     }, '');
     
     return path;
@@ -62,6 +52,15 @@ const BurnRateChart: React.FC<BurnRateChartProps> = ({ monthsToShow = 12 }) => {
     const last = points[points.length - 1];
     const first = points[0];
     return `${linePath} L ${last.x * 2.5} 200 L ${first.x * 2.5} 200 Z`;
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!chartRef.current) return
+    const rect = chartRef.current.getBoundingClientRect()
+    setMousePos({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    })
   }
 
   return (
@@ -83,7 +82,12 @@ const BurnRateChart: React.FC<BurnRateChartProps> = ({ monthsToShow = 12 }) => {
       </div>
 
       {/* Chart SVG */}
-      <div className="h-64 w-full relative">
+      <div 
+        ref={chartRef}
+        className="h-64 w-full relative" 
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => setHoveredPoint(null)}
+      >
         <svg viewBox="0 0 250 200" className="w-full h-full" preserveAspectRatio="none">
           <defs>
             <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -116,34 +120,58 @@ const BurnRateChart: React.FC<BurnRateChartProps> = ({ monthsToShow = 12 }) => {
             d={createPath(points)}
             fill="none"
             stroke="white"
-            strokeWidth="2"
+            strokeWidth="1"
           />
 
           {/* Interactive points */}
           {points.map((point, index) => (
-            <g key={index} onMouseEnter={() => setHoveredPoint(index)} onMouseLeave={() => setHoveredPoint(null)}>
-              <circle
-                cx={point.x * 2.5}
-                cy={200 - point.y * 2}
-                r={hoveredPoint === index ? 4 : 0}
+            <g 
+              key={index} 
+              onMouseEnter={() => setHoveredPoint(index)}
+            >
+              <rect
+                x={(point.x * 2.5) - (hoveredPoint === index ? 2 : 1)}
+                y={(200 - point.y * 2) - (hoveredPoint === index ? 2 : 1)}
+                width={hoveredPoint === index ? 4 : 2}
+                height={hoveredPoint === index ? 4 : 2}
                 fill="white"
-                stroke="#1f2937"
-                strokeWidth="2"
+                className="transition-all duration-200"
               />
-              {hoveredPoint === index && (
-                <g transform={`translate(${point.x * 2.5 - 40}, ${200 - point.y * 2 - 40})`}>
-                  <rect x="0" y="0" width="80" height="30" fill="#1f2937" stroke="#374151" rx="4" />
-                  <text x="40" y="12" textAnchor="middle" fill="white" fontSize="10">
-                    {formatAmount(point.amount)}
-                  </text>
-                  <text x="40" y="24" textAnchor="middle" fill="#9ca3af" fontSize="8">
-                    {format(point.date, 'dd MMMM yyyy', { locale: fr })}
-                  </text>
-                </g>
-              )}
             </g>
           ))}
         </svg>
+
+        {/* Tooltip */}
+        {hoveredPoint !== null && (
+          <div 
+            className="absolute z-50 pointer-events-none"
+            style={{
+              left: `${mousePos.x}px`,
+              top: `${mousePos.y - 16}px`,
+              transform: 'translate(-50%, -100%)'
+            }}
+          >
+            <div className="bg-card text-white border border-border p-2 min-w-[120px] backdrop-blur-sm rounded-none force-white">
+              <div className="space-y-1">
+                <div className="text-xs font-medium force-white">
+                  {formatAmount(points[hoveredPoint].amount)}
+                </div>
+                <div className="text-xs text-white/80 force-white">
+                  {format(points[hoveredPoint].date, 'dd MMM yyyy', { locale: fr })}
+                </div>
+                {hoveredPoint > 0 && (
+                  <div className={`text-xs ${
+                    points[hoveredPoint].amount > points[hoveredPoint - 1].amount 
+                      ? 'text-green-400' 
+                      : 'text-red-400'
+                  }`}>
+                    
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Y-axis labels */}
         <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-muted-foreground py-4">
