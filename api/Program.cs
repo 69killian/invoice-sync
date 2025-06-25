@@ -9,17 +9,18 @@ using Microsoft.Extensions.Logging;
 using Npgsql;
 
 // Force IPv4 globally at the start
-AppContext.SetSwitch("System.Net.DisableIPv6", true);
+// AppContext.SetSwitch("System.Net.DisableIPv6", true);  // Commenté pour permettre IPv6
 System.Net.ServicePointManager.UseNagleAlgorithm = false;
 System.Net.ServicePointManager.DnsRefreshTimeout = 0;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure Kestrel to use IPv4
+// Configure Kestrel to use both IPv4 and IPv6
 builder.WebHost.ConfigureKestrel(options =>
 {
     var port = int.Parse(Environment.GetEnvironmentVariable("PORT") ?? "8080");
-    options.Listen(System.Net.IPAddress.Parse("0.0.0.0"), port, listenOptions =>
+    // Écoute sur toutes les interfaces IPv4 et IPv6
+    options.ListenAnyIP(port, listenOptions =>
     {
         listenOptions.UseConnectionLogging();
     });
