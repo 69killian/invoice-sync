@@ -15,12 +15,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Configure CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("AllowNetlify", policy =>
     {
         policy
-            .AllowAnyOrigin()
+            .WithOrigins("https://quiet-semifreddo-0c263c.netlify.app")
             .AllowAnyMethod()
-            .AllowAnyHeader();
+            .AllowAnyHeader()
+            .AllowCredentials();
     });
 });
 
@@ -109,7 +110,7 @@ app.UseHttpsRedirection();
 app.UseCookiePolicy();
 
 // Use CORS before authentication
-app.UseCors("AllowAll");
+app.UseCors("AllowNetlify");
 
 app.UseAuthentication();
 app.UseAuthorization();
