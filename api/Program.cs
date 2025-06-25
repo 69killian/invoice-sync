@@ -67,11 +67,15 @@ try
                 Username = tempBuilder.Username,
                 Password = tempBuilder.Password,
                 Pooling = false,
-                Timeout = 30,
-                CommandTimeout = 30,
+                Timeout = 60,                    // Increased timeout
+                CommandTimeout = 60,             // Increased command timeout
                 IncludeErrorDetail = true,
-                SslMode = SslMode.Prefer,
-                KeepAlive = 30
+                SslMode = SslMode.Require,       // Changed to Require for Supabase
+                TrustServerCertificate = true,   // Trust the Supabase certificate
+                KeepAlive = 30,
+                ConnectionIdleLifetime = 300,    // 5 minutes idle timeout
+                ConnectionPruningInterval = 60,  // Check for idle connections every minute
+                MaxPoolSize = 5                  // Limit pool size
             };
 
             startupLogger.LogInformation($"Attempting to connect to database at {npgsqlBuilder.Host}:{npgsqlBuilder.Port}");
@@ -83,9 +87,23 @@ try
                     maxRetryDelay: TimeSpan.FromSeconds(30),
                     errorCodesToAdd: null
                 );
-                o.CommandTimeout(30);
+                o.CommandTimeout(60);
                 o.MigrationsHistoryTable("__EFMigrationsHistory");
             });
+
+            // Test the connection immediately
+            using var connection = new NpgsqlConnection(npgsqlBuilder.ConnectionString);
+            try
+            {
+                startupLogger.LogInformation("Testing initial connection...");
+                connection.Open();
+                startupLogger.LogInformation("Initial connection test successful");
+            }
+            catch (Exception ex)
+            {
+                startupLogger.LogError(ex, "Initial connection test failed");
+                throw;
+            }
 
             startupLogger.LogInformation("Database configuration completed successfully");
         }
@@ -169,14 +187,23 @@ try
             var scopedLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
             scopedLogger.LogInformation("Ensuring database is created...");
             
+            // Add delay before database operations
+            await Task.Delay(TimeSpan.FromSeconds(5));
+            
             // First check if we can connect
             scopedLogger.LogInformation("Testing database connection...");
-            await dbContext.Database.CanConnectAsync();
-            scopedLogger.LogInformation("Database connection test successful");
-
-            // Then ensure database is created
-            await dbContext.Database.EnsureCreatedAsync();
-            scopedLogger.LogInformation("Database check completed");
+            if (await dbContext.Database.CanConnectAsync())
+            {
+                scopedLogger.LogInformation("Database connection test successful");
+                
+                // Then ensure database is created
+                await dbContext.Database.EnsureCreatedAsync();
+                scopedLogger.LogInformation("Database check completed");
+            }
+            else
+            {
+                throw new Exception("Could not connect to the database after startup");
+            }
         }
         catch (Exception ex)
         {
