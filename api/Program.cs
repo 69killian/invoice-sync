@@ -54,31 +54,35 @@ try
             // Force IPv4
             AppContext.SetSwitch("System.Net.DisableIPv6", true);
 
-            // Parse and modify the host from the connection string
+            // Parse the connection string
             var tempBuilder = new NpgsqlConnectionStringBuilder(connectionString);
-            var modifiedHost = tempBuilder.Host.Replace("db.", ""); // Remove 'db.' prefix if present
+            
+            // Log the host (before any modification)
+            startupLogger.LogInformation($"Original host from connection string: {tempBuilder.Host}");
 
             // Configure Npgsql with proper connection settings
             var npgsqlBuilder = new NpgsqlConnectionStringBuilder
             {
-                Host = modifiedHost,
+                Host = tempBuilder.Host,         // Use the original host without modification
                 Port = tempBuilder.Port,
                 Database = tempBuilder.Database,
                 Username = tempBuilder.Username,
                 Password = tempBuilder.Password,
                 Pooling = false,
-                Timeout = 60,                    // Increased timeout
-                CommandTimeout = 60,             // Increased command timeout
+                Timeout = 60,
+                CommandTimeout = 60,
                 IncludeErrorDetail = true,
-                SslMode = SslMode.Require,       // Changed to Require for Supabase
-                TrustServerCertificate = true,   // Trust the Supabase certificate
+                SslMode = SslMode.Require,       // Required for Supabase
+                TrustServerCertificate = true,
                 KeepAlive = 30,
-                ConnectionIdleLifetime = 300,    // 5 minutes idle timeout
-                ConnectionPruningInterval = 60,  // Check for idle connections every minute
-                MaxPoolSize = 5                  // Limit pool size
+                ConnectionIdleLifetime = 300,
+                ConnectionPruningInterval = 60,
+                MaxPoolSize = 5
             };
 
-            startupLogger.LogInformation($"Attempting to connect to database at {npgsqlBuilder.Host}:{npgsqlBuilder.Port}");
+            // Log the connection string (with masked password)
+            var safeConnectionString = npgsqlBuilder.ConnectionString.Replace(npgsqlBuilder.Password, "****");
+            startupLogger.LogInformation($"Using connection string: {safeConnectionString}");
 
             options.UseNpgsql(npgsqlBuilder.ConnectionString, o =>
             {
@@ -95,13 +99,13 @@ try
             using var connection = new NpgsqlConnection(npgsqlBuilder.ConnectionString);
             try
             {
-                startupLogger.LogInformation("Testing initial connection...");
+                startupLogger.LogInformation($"Testing initial connection to {npgsqlBuilder.Host}:{npgsqlBuilder.Port}...");
                 connection.Open();
-                startupLogger.LogInformation("Initial connection test successful");
+                startupLogger.LogInformation($"Initial connection test successful to {npgsqlBuilder.Host}:{npgsqlBuilder.Port}");
             }
             catch (Exception ex)
             {
-                startupLogger.LogError(ex, "Initial connection test failed");
+                startupLogger.LogError(ex, $"Failed to open connection to {npgsqlBuilder.Host}:{npgsqlBuilder.Port}");
                 throw;
             }
 
