@@ -127,7 +127,6 @@ try
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials()
-                .SetIsOriginAllowed(_ => true) // Permet le développement local
                 .WithExposedHeaders("Set-Cookie"); // Important pour l'authentification
         });
     });
@@ -225,11 +224,11 @@ try
         app.UseSwaggerUI();
     }
 
+    // Use CORS before any other middleware
+    app.UseCors("AllowNetlify");
+
     // Add cookie policy middleware
     app.UseCookiePolicy();
-
-    // Use CORS before authentication and other middleware
-    app.UseCors("AllowNetlify");
 
     app.UseAuthentication();
     app.UseAuthorization();

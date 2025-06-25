@@ -120,7 +120,8 @@ namespace api.Controllers
                 HttpOnly = true,
                 Secure = true,
                 SameSite = SameSiteMode.None,
-                Expires = DateTimeOffset.UtcNow.AddMinutes(_jwt.ExpiresMinutes)
+                Expires = DateTimeOffset.UtcNow.AddMinutes(_jwt.ExpiresMinutes),
+                Path = "/"  // Ensure cookie is available for all paths
             };
             
             Console.WriteLine("Writing cookie with options:");
@@ -128,6 +129,7 @@ namespace api.Controllers
             Console.WriteLine($"Secure: {cookieOptions.Secure}");
             Console.WriteLine($"SameSite: {cookieOptions.SameSite}");
             Console.WriteLine($"Expires: {cookieOptions.Expires}");
+            Console.WriteLine($"Path: {cookieOptions.Path}");
             
             Response.Cookies.Append("Auth", jwt, cookieOptions);
         }
