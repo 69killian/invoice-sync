@@ -8,18 +8,21 @@ using Microsoft.AspNetCore.CookiePolicy;
 using Microsoft.Extensions.Logging;
 using Npgsql;
 
-var builder = WebApplication.CreateBuilder(args);
-
-// Force IPv4
+// Force IPv4 globally at the start
 AppContext.SetSwitch("System.Net.DisableIPv6", true);
 System.Net.ServicePointManager.UseNagleAlgorithm = false;
+System.Net.ServicePointManager.DnsRefreshTimeout = 0;
 
-// Configure port for Railway
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
-builder.WebHost.UseKestrel(options =>
+var builder = WebApplication.CreateBuilder(args);
+
+// Configure Kestrel to use IPv4
+builder.WebHost.ConfigureKestrel(options =>
 {
-    options.ListenAnyIP(int.Parse(port));
+    var port = int.Parse(Environment.GetEnvironmentVariable("PORT") ?? "8080");
+    options.Listen(System.Net.IPAddress.Parse("0.0.0.0"), port, listenOptions =>
+    {
+        listenOptions.UseConnectionLogging();
+    });
 });
 
 // Add logging
@@ -40,12 +43,36 @@ try
 {
     startupLogger.LogInformation("Starting application...");
     startupLogger.LogInformation($"Environment: {builder.Environment.EnvironmentName}");
-    startupLogger.LogInformation($"Port: {port}");
     startupLogger.LogInformation($"IPv6 Disabled: {AppContext.TryGetSwitch("System.Net.DisableIPv6", out bool disableIPv6) && disableIPv6}");
+    startupLogger.LogInformation($"Kestrel Endpoints: {string.Join(", ", builder.WebHost.GetSetting("urls")?.Split(';') ?? Array.Empty<string>())}");
     
-    // Log connection string (masked)
-    var connString = builder.Configuration.GetConnectionString("DefaultConnection");
-    startupLogger.LogInformation($"Database connection configured: {(connString != null ? "Yes" : "No")}");
+    // Configure CORS with detailed logging
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("AllowNetlify", policy =>
+        {
+            policy
+                .SetIsOriginAllowed(origin =>
+                {
+                    var allowedOrigins = new[]
+                    {
+                        "https://quiet-semifreddo-0c263c.netlify.app",
+                        "http://localhost:5173",
+                        "http://localhost:3000"
+                    };
+                    startupLogger.LogInformation($"CORS: Checking origin: {origin}");
+                    var isAllowed = allowedOrigins.Contains(origin);
+                    startupLogger.LogInformation($"CORS: Origin {origin} is {(isAllowed ? "allowed" : "not allowed")}");
+                    return isAllowed;
+                })
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials()
+                .WithExposedHeaders("Set-Cookie", "Authorization");
+
+            startupLogger.LogInformation("CORS policy configured successfully");
+        });
+    });
 
     // Add DbContext
     builder.Services.AddDbContext<AppDbContext>(options =>
@@ -119,30 +146,6 @@ try
             startupLogger.LogError(ex, "Error configuring database connection");
             throw;
         }
-    });
-
-    // Configure CORS
-    builder.Services.AddCors(options =>
-    {
-        options.AddPolicy("AllowNetlify", policy =>
-        {
-            policy
-                .SetIsOriginAllowed(origin =>
-                {
-                    var allowedOrigins = new[]
-                    {
-                        "https://quiet-semifreddo-0c263c.netlify.app",
-                        "http://localhost:5173",
-                        "http://localhost:3000"
-                    };
-                    startupLogger.LogInformation($"Checking origin: {origin}");
-                    return allowedOrigins.Contains(origin);
-                })
-                .AllowAnyMethod()
-                .AllowAnyHeader()
-                .AllowCredentials()
-                .WithExposedHeaders("Set-Cookie", "Authorization");
-        });
     });
 
     // Add services to the container.
