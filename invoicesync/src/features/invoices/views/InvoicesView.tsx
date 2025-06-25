@@ -69,44 +69,6 @@ const InvoicesView = () => {
 
   const pagination = usePagination(10);
 
-  // Compute stats
-  const totalInvoicesCount = invoices.length;
-  const totalRevenueNumber = invoices.reduce((acc, inv) => acc + (inv.totalInclTax ?? 0), 0);
-  const totalRevenueFormatted = (totalRevenueNumber ?? 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
-
-  // Monthly stats using ISO string slice to avoid timezone issues
-  const now = new Date();
-  const currentMonthKey = now.toISOString().slice(0, 7); // 'YYYY-MM'
-
-  // Build previous month key
-  const [currY, currM] = currentMonthKey.split('-').map(Number);
-  const prevDate = new Date(currY, currM - 1 - 1, 1); // subtract 1 for zero-index months then 1 more for previous
-  const prevMonthKey = prevDate.toISOString().slice(0, 7);
-
-  const invoicesThisMonth = invoices.filter(inv => inv.dateIssued.slice(0, 7) === currentMonthKey);
-  const invoicesPrevMonth = invoices.filter(inv => inv.dateIssued.slice(0, 7) === prevMonthKey);
-
-  const currentMonthInvoicesCount = invoicesThisMonth.length;
-  const prevMonthInvoicesCount = invoicesPrevMonth.length;
-
-  const currentMonthRevenueNumber = invoicesThisMonth.reduce((acc, inv) => acc + (inv.totalInclTax ?? 0), 0);
-  const prevMonthRevenueNumber = invoicesPrevMonth.reduce((acc, inv) => acc + (inv.totalInclTax ?? 0), 0);
-
-  const revenueThisMonthFormatted = (currentMonthRevenueNumber ?? 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
-
-  const calcTrend = (curr: number, prev: number) => {
-    if (prev === 0) {
-      if (curr === 0) return '0%';
-      return '+100%';
-    }
-    const diff = ((curr - prev) / prev) * 100;
-    const sign = diff >= 0 ? '+' : '-';
-    return `${sign}${Math.abs(diff).toFixed(1)}%`;
-  };
-
-  const invoicesTrendStr = calcTrend(currentMonthInvoicesCount, prevMonthInvoicesCount);
-  const revenueTrendStr = calcTrend(currentMonthRevenueNumber, prevMonthRevenueNumber);
-
   // Apply client search / status filter before pagination
   const filteredInvoices = invoices.filter((inv) => {
     const matchesSearch = inv.clientName.toLowerCase().includes(searchTerm.toLowerCase());
@@ -131,44 +93,26 @@ const InvoicesView = () => {
 
   const openPanelView = (inv: Invoice) => {
     setSelectedInvoice(inv);
-    // Convert ISO date to YYYY-MM-DD format for date input
-    const dateIssued = new Date(inv.dateIssued);
-    const formattedDate = dateIssued.toISOString().split('T')[0];
-    setEditForm({
-      number: inv.invoiceNumber,
-      client: inv.clientName,
-      date: formattedDate,
-      amount: inv.totalInclTax.toString(),
-      status: inv.status,
-      services: inv.services?.map((s) => ({ serviceId: s.serviceId, quantity: s.quantity })) ?? [{ serviceId: '', quantity: 1 }],
-    });
-    setIsCreating(false);
     setIsEditing(false);
+    setIsCreating(false);
   };
 
   const openPanelEdit = (inv: Invoice) => {
-    openPanelView(inv);
+    setSelectedInvoice(inv);
     setIsEditing(true);
+    setIsCreating(false);
   };
 
   const openCreatePanel = () => {
     setSelectedInvoice(null);
-    setEditForm({
-      number: '',
-      client: '',
-      date: '',
-      amount: '',
-      status: 'En attente',
-      services: [{ serviceId: '', quantity: 1 }]
-    });
-    setIsCreating(true);
     setIsEditing(false);
+    setIsCreating(true);
   };
 
   const closePanel = () => {
     setSelectedInvoice(null);
-    setIsCreating(false);
     setIsEditing(false);
+    setIsCreating(false);
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -312,14 +256,7 @@ const InvoicesView = () => {
         <InvoicesHeader onCreateClick={openCreatePanel} />
 
         {/* Statistics Cards */}
-        <StatCards
-          totalInvoices={totalInvoicesCount}
-          totalInvoicesTrend={invoicesTrendStr}
-          newInvoicesThisMonth={currentMonthInvoicesCount}
-          revenue={totalRevenueFormatted}
-          revenueTrend={revenueTrendStr}
-          newRevenueThisMonth={revenueThisMonthFormatted}
-        />
+        <StatCards />
 
         {/* Search and Filters */}
         <InvoicesSearchFilters

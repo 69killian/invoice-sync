@@ -69,7 +69,6 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
             <TableHead style={{ border: 'none' }}>Email</TableHead>
             <TableHead style={{ border: 'none' }}>Téléphone</TableHead>
             <TableHead style={{ border: 'none' }}>Status</TableHead>
-            <TableHead style={{ border: 'none' }}>Projets</TableHead>
             <TableHead style={{ border: 'none' }}>Chiffre d'affaires</TableHead>
             <TableHead className="w-12" style={{ border: 'none' }}></TableHead>
           </TableRow>
@@ -103,8 +102,7 @@ const ClientsTable: React.FC<ClientsTableProps> = ({
                   )}
                 </div>
               </TableCell>
-              <TableCell className="text-sm font-thin text-foreground">{c.projectsCount}</TableCell>
-              <TableCell className="text-sm font-thin text-foreground">{c.totalRevenue}</TableCell>
+              <TableCell className="text-sm font-thin text-foreground">{c.totalRevenue}€</TableCell>
               <TableCell>
                 <div className="relative">
                   <button className="text-muted-foreground hover:text-foreground rounded-none border border-border flex items-center justify-center" onClick={() => onToggleDropdown(c.id)}>

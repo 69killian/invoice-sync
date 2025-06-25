@@ -256,8 +256,7 @@ const ClientView = () => {
                       <div>
                         <h3 className="text-sm font-medium text-muted-foreground mb-2">Activité</h3>
                         <div className="text-sm text-foreground space-y-2">
-                          <div>Projets: {selectedClient?.projectsCount}</div>
-                          <div>Chiffre d'affaires: {selectedClient?.totalRevenue}</div>
+                          <div>Chiffre d'affaires: {selectedClient?.totalRevenue}€</div>
                         </div>
                       </div>
                     </div>

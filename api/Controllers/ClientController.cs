@@ -28,6 +28,7 @@ public class ClientController : ControllerBase
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var clients = await _context.Clients
             .Where(c => c.UserId == userId)
+            .Include(c => c.Invoices)
             .AsNoTracking()
             .Select(c => new ClientDto
             {
@@ -36,8 +37,8 @@ public class ClientController : ControllerBase
                 Email = c.Email,
                 Phone = c.Phone,
                 Status = c.Status,
-                TotalRevenue = c.TotalRevenue,
-                ProjectsCount = c.ProjectsCount,
+                TotalRevenue = c.Invoices.Sum(i => i.TotalInclTax),
+                ProjectsCount = 0,
                 CreatedAt = c.CreatedAt
             }).ToListAsync();
 
@@ -50,6 +51,7 @@ public class ClientController : ControllerBase
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var client = await _context.Clients
+            .Include(c => c.Invoices)
             .AsNoTracking()
             .Where(c => c.Id == id && c.UserId == userId)
             .Select(c => new ClientDto
@@ -59,8 +61,8 @@ public class ClientController : ControllerBase
                 Email = c.Email,
                 Phone = c.Phone,
                 Status = c.Status,
-                TotalRevenue = c.TotalRevenue,
-                ProjectsCount = c.ProjectsCount,
+                TotalRevenue = c.Invoices.Sum(i => i.TotalInclTax),
+                ProjectsCount = 0,
                 CreatedAt = c.CreatedAt
             })
             .FirstOrDefaultAsync();
@@ -84,7 +86,9 @@ public class ClientController : ControllerBase
             Name = dto.Name,
             Email = dto.Email,
             Phone = dto.Phone,
-            Status = "active"
+            Status = "active",
+            TotalRevenue = 0,
+            ProjectsCount = 0
         };
 
         await _context.Clients.AddAsync(client);
@@ -97,8 +101,8 @@ public class ClientController : ControllerBase
             Email = client.Email,
             Phone = client.Phone,
             Status = client.Status,
-            TotalRevenue = client.TotalRevenue,
-            ProjectsCount = client.ProjectsCount,
+            TotalRevenue = 0,
+            ProjectsCount = 0,
             CreatedAt = client.CreatedAt
         };
 
