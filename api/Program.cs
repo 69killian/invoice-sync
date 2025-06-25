@@ -51,7 +51,11 @@ try
                 .WithOrigins("https://invoice-sync-lilac.vercel.app")
                 .AllowAnyMethod()
                 .AllowAnyHeader()
-                .AllowCredentials();
+                .AllowCredentials()
+                .WithExposedHeaders("Set-Cookie", "Authorization")
+                .SetPreflightMaxAge(TimeSpan.FromSeconds(86400));
+
+            startupLogger.LogInformation("CORS policy configured for Vercel");
         });
     });
 
@@ -229,7 +233,7 @@ try
     app.UseMiddleware<RequestLoggingMiddleware>();
 
     // Use CORS before routing and endpoints
-    app.UseCors();
+    app.UseCors("AllowVercel");  // Spécifier explicitement la policy à utiliser
 
     // Add cookie policy middleware
     app.UseCookiePolicy(new CookiePolicyOptions

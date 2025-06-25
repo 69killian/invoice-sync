@@ -33,8 +33,16 @@ namespace api.Controllers
             Response.Headers["Access-Control-Allow-Origin"] = "https://invoice-sync-lilac.vercel.app";
             Response.Headers["Access-Control-Allow-Credentials"] = "true";
             Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-            Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With, Accept";
-            Response.Headers["Access-Control-Expose-Headers"] = "Set-Cookie";
+            Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With, Accept, Origin, Referer, User-Agent, Sec-Ch-Ua, Sec-Ch-Ua-Mobile, Sec-Ch-Ua-Platform";
+            Response.Headers["Access-Control-Expose-Headers"] = "Set-Cookie, Authorization";
+            Response.Headers["Access-Control-Max-Age"] = "86400";
+            
+            // Log tous les headers pour le débogage
+            _logger.LogInformation("Response CORS Headers:");
+            foreach (var header in Response.Headers)
+            {
+                _logger.LogInformation($"{header.Key}: {header.Value}");
+            }
         }
 
         public record LoginRequest(string Email);
