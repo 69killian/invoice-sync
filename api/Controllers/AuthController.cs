@@ -179,9 +179,18 @@ namespace api.Controllers
             _logger.LogInformation($"Path: {cookieOptions.Path}");
             _logger.LogInformation($"Domain: {cookieOptions.Domain}");
             
-            AddCorsHeaders();
+            // Ajouter des en-têtes CORS explicites pour les cookies
+            Response.Headers["Access-Control-Allow-Origin"] = "https://invoice-sync-lilac.vercel.app";
+            Response.Headers["Access-Control-Allow-Credentials"] = "true";
+            Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+            Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With, Accept";
+            Response.Headers["Access-Control-Expose-Headers"] = "Set-Cookie";
             
             Response.Cookies.Append("Auth", jwt, cookieOptions);
+
+            // Log le cookie pour debug
+            _logger.LogInformation($"Cookie Auth set with value length: {jwt.Length}");
+            _logger.LogInformation($"Response headers: {string.Join(", ", Response.Headers.Select(h => $"{h.Key}: {h.Value}"))}");
         }
     }
 } 

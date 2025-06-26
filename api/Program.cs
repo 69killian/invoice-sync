@@ -186,6 +186,11 @@ try
         options.MinimumSameSitePolicy = SameSiteMode.None;
         options.Secure = CookieSecurePolicy.Always;
         options.HttpOnly = HttpOnlyPolicy.Always;
+        options.OnAppendCookie = cookieContext =>
+        {
+            cookieContext.CookieOptions.SameSite = SameSiteMode.None;
+            cookieContext.CookieOptions.Secure = true;
+        };
     });
 
     var app = builder.Build();
@@ -239,12 +244,7 @@ try
     app.UseCors("AllowVercel");
 
     // Add cookie policy middleware
-    app.UseCookiePolicy(new CookiePolicyOptions
-    {
-        MinimumSameSitePolicy = SameSiteMode.None,
-        Secure = CookieSecurePolicy.Always,
-        HttpOnly = HttpOnlyPolicy.Always
-    });
+    app.UseCookiePolicy();
 
     app.UseAuthentication();
     app.UseAuthorization();

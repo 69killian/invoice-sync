@@ -15,10 +15,9 @@ const apiFetch = async <T>(endpoint: string, options: RequestInit = {}): Promise
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'X-Requested-With': 'XMLHttpRequest',  // Aide pour certains serveurs à identifier les requêtes CORS
+      'X-Requested-With': 'XMLHttpRequest'
     },
-    mode: 'cors',
-    cache: 'no-cache',  // Évite les problèmes de cache avec les cookies
+    mode: 'cors'
   };
 
   // Si c'est une requête POST/PUT, on s'assure que le body est bien stringifié
@@ -40,45 +39,28 @@ const apiFetch = async <T>(endpoint: string, options: RequestInit = {}): Promise
     method: finalOptions.method,
     headers: finalOptions.headers,
     body: finalOptions.body,
-    cookies: document.cookie,
+    cookies: document.cookie
   });
 
   try {
     const response = await fetch(url, finalOptions);
     
-    // Log les headers bruts pour debug
-    const rawHeaders = {};
-    response.headers.forEach((value, key) => {
-      rawHeaders[key] = value;
-    });
-
-    // Vérifie si la réponse a du contenu avant de parser le JSON
-    const contentType = response.headers.get('content-type');
-    const responseData = contentType?.includes('application/json') 
-      ? await response.json().catch(() => null)
-      : null;
-
-    console.log('API Response:', {
-      url,
-      status: response.status,
-      ok: response.ok,
-      data: responseData,
-      rawHeaders,
-      cookies: document.cookie,
-    });
-
     if (!response.ok) {
-      const error = new Error(responseData?.message || `HTTP error! status: ${response.status}`);
-      Object.assign(error, { status: response.status, data: responseData });
-      throw error;
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    return responseData;
+    // Pour les requêtes qui ne retournent pas de contenu
+    if (response.status === 204) {
+      return {} as T;
+    }
+
+    const data = await response.json();
+    return data as T;
   } catch (error) {
-    console.error('API Error:', {
+    console.log('API Error:', {
       url,
       error,
-      cookies: document.cookie,
+      cookies: document.cookie
     });
     throw error;
   }
