@@ -233,7 +233,7 @@ try
     app.UseMiddleware<RequestLoggingMiddleware>();
 
     // Use CORS before routing and endpoints
-    app.UseCors("AllowVercel");  // Spécifier explicitement la policy à utiliser
+    app.UseCors("AllowVercel");
 
     // Add cookie policy middleware
     app.UseCookiePolicy(new CookiePolicyOptions
@@ -251,7 +251,7 @@ try
     // Add health check endpoint
     app.MapGet("/health", () => 
     {
-        return Results.Ok("Healthy");
+        return Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow });
     });
 
     startupLogger.LogInformation("Application configured successfully");

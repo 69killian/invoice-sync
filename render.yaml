@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: invoice-sync-api
+    env: docker
+    region: frankfurt  # Europe
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: PORT
+        value: 8080
+      - key: JWT_SECRET_KEY
+        sync: false  # Marquer comme secret
+      - key: DATABASE_URL
+        sync: false  # Marquer comme secret
+    buildCommand: docker build -t invoice-sync-api .
+    startCommand: docker run -p 8080:8080 invoice-sync-api 

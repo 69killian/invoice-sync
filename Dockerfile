@@ -9,17 +9,21 @@ RUN dotnet restore
 
 # Copy everything else and build
 COPY api/. .
-RUN dotnet publish -c Release -o /app
+RUN dotnet publish -c Release -o /app --no-restore
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 COPY --from=build /app .
 
-# Configure the port
-ENV ASPNETCORE_URLS=http://+:8080
+# Configure aspnet to use port from environment
+ENV ASPNETCORE_URLS=http://+:${PORT}
+ENV PORT=8080
 
-EXPOSE 8080
+# Make sure the app runs in production mode
+ENV ASPNETCORE_ENVIRONMENT=Production
+
+EXPOSE ${PORT}
 
 # Start the app
 ENTRYPOINT ["dotnet", "api.dll"] 
