@@ -1,13 +1,24 @@
-**/.git
-**/.gitignore
-**/.vs
-**/.vscode
-**/bin
-**/obj
-**/out
-**/build
-**/node_modules
-**/*.user
-**/.env
+# Ignore les fichiers de développement
+.git
+.gitignore
+.vs
+.vscode
+*.user
+*.userosscache
+*.suo
+
+# Ignore les dossiers de build
+**/bin/
+**/obj/
+**/out/
+
+# Ignore les dépendances Node.js du frontend
+**/node_modules/
+**/build/
+
+# Ignore les fichiers de configuration locaux
+**/*.Development.json
 **/.env.local
+**/.env.development.local
+
 **/.DS_Store 
