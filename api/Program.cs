@@ -48,14 +48,17 @@ try
         options.AddPolicy("AllowVercel", policy =>
         {
             policy
-                .WithOrigins("https://invoice-sync-lilac.vercel.app")
+                .WithOrigins(
+                    "https://invoice-sync-lilac.vercel.app",
+                    "https://invoice-sync-ej06.onrender.com"
+                )
                 .AllowAnyMethod()
                 .AllowAnyHeader()
                 .AllowCredentials()
                 .WithExposedHeaders("Set-Cookie", "Authorization")
                 .SetPreflightMaxAge(TimeSpan.FromSeconds(86400));
 
-            startupLogger.LogInformation("CORS policy configured for Vercel");
+            startupLogger.LogInformation("CORS policy configured for Vercel and Render");
         });
     });
 

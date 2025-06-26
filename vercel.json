@@ -9,6 +9,6 @@
     }
   ],
   "env": {
-    "REACT_APP_API_URL": "https://invoice-sync-production.up.railway.app/api"
+    "REACT_APP_API_URL": "https://invoice-sync-ej06.onrender.com/api"
   }
 } 

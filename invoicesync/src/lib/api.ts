@@ -5,7 +5,7 @@ import { User, UserUpdate } from '../features/settings/types';
 import { Activity } from '../features/activities/types';
 
 // URL de base de l'API : on privilégie la variable d'environnement, sinon fallback vers l'API en production
-const API_URL = process.env.REACT_APP_API_URL || "https://invoice-sync-production.up.railway.app/api";
+const API_URL = process.env.REACT_APP_API_URL || "https://invoice-sync-ej06.onrender.com/api";
 
 const apiFetch = async <T>(endpoint: string, options: RequestInit = {}): Promise<T> => {
   const url = `${API_URL}${endpoint}`;
