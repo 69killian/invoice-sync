@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Loader2, Smartphone } from 'lucide-react';
 import {
   DeleteModal,
   DeleteModalOverlay,
@@ -46,7 +46,46 @@ const LoginPage = () => {
   const [error, setError] = useState("");
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const { login } = useAuth();
+  
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  if (isMobile) {
+    return (
+      <div className="dark min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="text-center space-y-6 max-w-md">
+          <div className="flex justify-center">
+            <Smartphone size={64} className="text-muted-foreground" />
+          </div>
+          <div className="space-y-4">
+            <h1 className="text-2xl font-medium text-foreground" style={{fontFamily: 'Bricolage Grotesque, sans-serif'}}>
+              Site non disponible sur mobile
+            </h1>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              InvoiceSync n'est actuellement pas optimisé pour les appareils mobiles. 
+              Veuillez utiliser un ordinateur ou une tablette pour accéder à l'application.
+            </p>
+          </div>
+          <div className="pt-4">
+            <div className="w-full h-px bg-border"></div>
+            <p className="text-xs text-muted-foreground mt-4">
+              Merci de votre compréhension
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="dark min-h-screen flex items-center justify-center bg-background">
