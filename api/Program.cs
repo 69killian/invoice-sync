@@ -231,14 +231,15 @@ try
         {
             context.Response.Headers["Access-Control-Allow-Origin"] = origin;
             context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-            context.Response.Headers["Access-Control-Allow-Headers"] = "*";
+            context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Accept, Origin, Authorization";
             context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
-            context.Response.Headers["Access-Control-Expose-Headers"] = "*";
+            context.Response.Headers["Access-Control-Expose-Headers"] = "Set-Cookie, Authorization";
             context.Response.Headers["Access-Control-Max-Age"] = "86400";
 
             if (context.Request.Method == "OPTIONS")
             {
                 context.Response.StatusCode = 200;
+                await context.Response.CompleteAsync();
                 return;
             }
         }

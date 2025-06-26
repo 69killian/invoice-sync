@@ -15,7 +15,6 @@ const apiFetch = async <T>(endpoint: string, options: RequestInit = {}): Promise
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'X-Requested-With': 'XMLHttpRequest',
       'Origin': 'https://invoice-sync-lilac.vercel.app'
     },
     mode: 'cors',
