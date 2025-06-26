@@ -28,23 +28,6 @@ namespace api.Controllers
             _logger = logger;
         }
 
-        private void AddCorsHeaders()
-        {
-            Response.Headers["Access-Control-Allow-Origin"] = "https://invoice-sync-lilac.vercel.app";
-            Response.Headers["Access-Control-Allow-Credentials"] = "true";
-            Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-            Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With, Accept, Origin, Referer, User-Agent, Sec-Ch-Ua, Sec-Ch-Ua-Mobile, Sec-Ch-Ua-Platform";
-            Response.Headers["Access-Control-Expose-Headers"] = "Set-Cookie, Authorization";
-            Response.Headers["Access-Control-Max-Age"] = "86400";
-            
-            // Log tous les headers pour le débogage
-            _logger.LogInformation("Response CORS Headers:");
-            foreach (var header in Response.Headers)
-            {
-                _logger.LogInformation($"{header.Key}: {header.Value}");
-            }
-        }
-
         public record LoginRequest(string Email);
 
         [HttpPost("login")]
@@ -53,8 +36,6 @@ namespace api.Controllers
         {
             _logger.LogInformation($"Login attempt from origin: {Request.Headers["Origin"]}");
             _logger.LogInformation($"Request headers: {string.Join(", ", Request.Headers.Select(h => $"{h.Key}: {h.Value}"))}");
-            
-            AddCorsHeaders();
             
             if (string.IsNullOrWhiteSpace(req.Email))
                 return BadRequest("Email requis");
@@ -91,7 +72,6 @@ namespace api.Controllers
         public IActionResult LoginOptions()
         {
             _logger.LogInformation("OPTIONS request received for /login");
-            AddCorsHeaders();
             return Ok();
         }
 
@@ -100,7 +80,6 @@ namespace api.Controllers
         public IActionResult MeOptions()
         {
             _logger.LogInformation("OPTIONS request received for /me");
-            AddCorsHeaders();
             return Ok();
         }
 
@@ -108,7 +87,6 @@ namespace api.Controllers
         [HttpPost("logout")]
         public IActionResult Logout()
         {
-            AddCorsHeaders();
             Response.Cookies.Delete("Auth");
             return NoContent();
         }
@@ -125,8 +103,6 @@ namespace api.Controllers
             }
             _logger.LogInformation($"Authorization header present: {Request.Headers.ContainsKey("Authorization")}");
             _logger.LogInformation($"Origin header: {Request.Headers["Origin"]}");
-            
-            AddCorsHeaders();
             
             var email = User.FindFirstValue(ClaimTypes.Email);
             var idStr = User.FindFirstValue(ClaimTypes.NameIdentifier);

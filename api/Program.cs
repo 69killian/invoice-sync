@@ -122,6 +122,21 @@ try
         }
     });
 
+    // Configure CORS
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("AllowVercel", policy =>
+        {
+            policy
+                .WithOrigins("https://invoice-sync-lilac.vercel.app")
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials()
+                .WithExposedHeaders("Set-Cookie", "Authorization")
+                .SetPreflightMaxAge(TimeSpan.FromSeconds(86400));
+        });
+    });
+
     // Add services to the container.
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
@@ -223,31 +238,13 @@ try
     // Add request logging middleware
     app.UseMiddleware<RequestLoggingMiddleware>();
 
-    // Configure CORS middleware
-    app.Use(async (context, next) =>
-    {
-        var origin = context.Request.Headers["Origin"].ToString();
-        if (origin == "https://invoice-sync-lilac.vercel.app")
-        {
-            context.Response.Headers["Access-Control-Allow-Origin"] = origin;
-            context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
-            context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Accept, Origin, Authorization";
-            context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
-            context.Response.Headers["Access-Control-Expose-Headers"] = "Set-Cookie, Authorization";
-            context.Response.Headers["Access-Control-Max-Age"] = "86400";
+    // Configure middleware pipeline
+    app.UseRouting();
 
-            if (context.Request.Method == "OPTIONS")
-            {
-                context.Response.StatusCode = 200;
-                await context.Response.CompleteAsync();
-                return;
-            }
-        }
+    // Configure CORS - must be after UseRouting and before UseAuthentication
+    app.UseCors("AllowVercel");
 
-        await next();
-    });
-
-    // Add cookie policy middleware
+    // Configure cookie policy
     app.UseCookiePolicy(new CookiePolicyOptions
     {
         MinimumSameSitePolicy = SameSiteMode.None,
