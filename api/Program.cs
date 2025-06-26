@@ -43,24 +43,7 @@ try
     startupLogger.LogInformation($"PORT: {Environment.GetEnvironmentVariable("PORT")}");
     
     // Configure CORS with detailed logging
-    builder.Services.AddCors(options =>
-    {
-        options.AddPolicy("AllowVercel", policy =>
-        {
-            policy
-                .WithOrigins(
-                    "https://invoice-sync-lilac.vercel.app",
-                    "https://invoice-sync-ej06.onrender.com"
-                )
-                .AllowAnyMethod()
-                .AllowAnyHeader()
-                .AllowCredentials()
-                .WithExposedHeaders("Set-Cookie", "Authorization")
-                .SetPreflightMaxAge(TimeSpan.FromSeconds(86400));
-
-            startupLogger.LogInformation("CORS policy configured for Vercel and Render");
-        });
-    });
+    startupLogger.LogInformation("Configuring CORS...");
 
     // Add middleware to log all requests
     builder.Services.AddTransient<RequestLoggingMiddleware>();
@@ -240,11 +223,36 @@ try
     // Add request logging middleware
     app.UseMiddleware<RequestLoggingMiddleware>();
 
-    // Use CORS before routing and endpoints
-    app.UseCors("AllowVercel");
+    // Configure CORS middleware
+    app.Use(async (context, next) =>
+    {
+        var origin = context.Request.Headers["Origin"].ToString();
+        if (origin == "https://invoice-sync-lilac.vercel.app")
+        {
+            context.Response.Headers["Access-Control-Allow-Origin"] = origin;
+            context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+            context.Response.Headers["Access-Control-Allow-Headers"] = "*";
+            context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
+            context.Response.Headers["Access-Control-Expose-Headers"] = "*";
+            context.Response.Headers["Access-Control-Max-Age"] = "86400";
+
+            if (context.Request.Method == "OPTIONS")
+            {
+                context.Response.StatusCode = 200;
+                return;
+            }
+        }
+
+        await next();
+    });
 
     // Add cookie policy middleware
-    app.UseCookiePolicy();
+    app.UseCookiePolicy(new CookiePolicyOptions
+    {
+        MinimumSameSitePolicy = SameSiteMode.None,
+        Secure = CookieSecurePolicy.Always,
+        HttpOnly = HttpOnlyPolicy.Always
+    });
 
     app.UseAuthentication();
     app.UseAuthorization();

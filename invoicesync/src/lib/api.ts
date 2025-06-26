@@ -15,9 +15,11 @@ const apiFetch = async <T>(endpoint: string, options: RequestInit = {}): Promise
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'X-Requested-With': 'XMLHttpRequest'
+      'X-Requested-With': 'XMLHttpRequest',
+      'Origin': 'https://invoice-sync-lilac.vercel.app'
     },
-    mode: 'cors'
+    mode: 'cors',
+    cache: 'no-cache'  // Disable caching to ensure fresh responses
   };
 
   // Si c'est une requête POST/PUT, on s'assure que le body est bien stringifié
@@ -44,6 +46,14 @@ const apiFetch = async <T>(endpoint: string, options: RequestInit = {}): Promise
 
   try {
     const response = await fetch(url, finalOptions);
+    
+    // Log response headers for debugging
+    console.log('API Response Headers:', {
+      url,
+      status: response.status,
+      headers: Object.fromEntries(response.headers.entries()),
+      cookies: document.cookie
+    });
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
