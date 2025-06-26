@@ -176,6 +176,16 @@ try
                 ValidAudience = jwtAudience ?? "InvoiceSync",
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey))
             };
+
+            // Configure JWT bearer to look for token in cookies
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+                    context.Token = context.Request.Cookies["Auth"];
+                    return Task.CompletedTask;
+                }
+            };
         });
 
     // Configure cookie policy

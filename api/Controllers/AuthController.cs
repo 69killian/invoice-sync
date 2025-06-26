@@ -144,7 +144,7 @@ namespace api.Controllers
                 SameSite = SameSiteMode.None,
                 Expires = DateTimeOffset.UtcNow.AddMinutes(_jwt.ExpiresMinutes),
                 Path = "/",
-                Domain = null  // Permet au cookie d'être envoyé au domaine actuel
+                Domain = null  // Allow cookie to be sent to current domain
             };
             
             _logger.LogInformation("Writing cookie with options:");
@@ -155,16 +155,16 @@ namespace api.Controllers
             _logger.LogInformation($"Path: {cookieOptions.Path}");
             _logger.LogInformation($"Domain: {cookieOptions.Domain}");
             
-            // Ajouter des en-têtes CORS explicites pour les cookies
+            // Add CORS headers for cookie handling
             Response.Headers["Access-Control-Allow-Origin"] = "https://invoice-sync-lilac.vercel.app";
             Response.Headers["Access-Control-Allow-Credentials"] = "true";
             Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
             Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With, Accept";
-            Response.Headers["Access-Control-Expose-Headers"] = "Set-Cookie";
+            Response.Headers["Access-Control-Expose-Headers"] = "Set-Cookie,Authorization";
             
             Response.Cookies.Append("Auth", jwt, cookieOptions);
 
-            // Log le cookie pour debug
+            // Log cookie details
             _logger.LogInformation($"Cookie Auth set with value length: {jwt.Length}");
             _logger.LogInformation($"Response headers: {string.Join(", ", Response.Headers.Select(h => $"{h.Key}: {h.Value}"))}");
         }
