@@ -338,7 +338,6 @@ namespace api.Controllers
 
             try
             {
-                QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
                 var document = new InvoiceDocument(invoice);
                 var pdfBytes = document.GeneratePdf();
                 return File(pdfBytes, "application/pdf", $"facture-{invoice.InvoiceNumber}.pdf");

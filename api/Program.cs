@@ -7,6 +7,10 @@ using System.Text;
 using Microsoft.AspNetCore.CookiePolicy;
 using Microsoft.Extensions.Logging;
 using Npgsql;
+using QuestPDF.Infrastructure;
+
+// Configure QuestPDF license
+QuestPDF.Settings.License = LicenseType.Community;
 
 // Force IPv4 globally at the start
 // AppContext.SetSwitch("System.Net.DisableIPv6", true);  // Commenté pour permettre IPv6
