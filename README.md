@@ -1,4 +1,4 @@
-# 🧾 InvoiceSync  
+# InvoiceSync  
 **Générez vos factures. Suivez votre comptabilité. Gagnez du temps.**
 
 InvoiceSync est une application moderne destinée aux **entrepreneurs**, **freelances** et **petites entreprises**.  
