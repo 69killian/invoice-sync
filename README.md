@@ -1,5 +1,5 @@
 # InvoiceSync  
-**Générez vos factures. Suivez votre comptabilité. Gagnez du temps.**
+**Génére tes factures. Suis ta comptabilité. Gagne du temps.**
 
 InvoiceSync est une application moderne destinée aux **entrepreneurs**, **freelances** et **petites entreprises**.  
 Elle permet de **générer des factures professionnelles**, de **gérer sa comptabilité** simplement et d’automatiser plusieurs tâches administratives chronophages.
